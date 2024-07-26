@@ -4,9 +4,9 @@
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
-#define fallbackAttrib f@`chs('target_attribute')`
-#if `ch('class')`
-float value = getattrib(0,chs('class'),chs('target_attribute'),@elemnum,0); // [[default=mask,preset=attribSelectFloat]] adlParm[[parm='class',hidden=1]]
+#define fallbackAttrib f@`chs('target_attribute')` // [[default=mask,preset=attribSelectFloat]]
+#if `ch('class')` // [[parm='class',hidden=1]]
+float value = getattrib(0,chs('class'),chs('target_attribute'),@elemnum,0); 
 #else
 float value = fallbackAttrib;
 #endif
