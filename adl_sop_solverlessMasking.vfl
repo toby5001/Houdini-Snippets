@@ -1,0 +1,56 @@
+// Simple way to transition a mask that is staggered across geo without a need for a solver, while using a consistent speed
+// adl_sop_solverlessMasking.vfl, by Andrew Louda
+// Modified: 2024-05-24 - Initial asset
+// Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+// this can either use a id number to randomize offsets, or use an incoming offset weight
+
+string mode = chs('mode'); // adlParm[[menu_pairs={'set':'Set','add':'Add','mult':'Multiply','min':'Minimum','max':'Maximum'}]]
+string target_attibute = chs('target_attribute'); // adlParm[[default=mask,preset=attribSelectFloat]]
+
+float t = chf("t"); // adlParm[[default_expression='$T*0.5',help='Moves through offsets as it goes from 0 to 1']]
+
+float offset_spread = chf("spread"); // adlParm[[default=1,min=0,max=10]]
+
+int offset_method = chi('offset_method'); // adlParm[[menu_items=('rand','weight'), menu_labels=('Random Per Element','Weight Attribute') ]]
+
+float offset_weight = 0;
+
+if(offset_method == 0){
+    // adlFolder[[name=rand_parms, type='collapsible', label='Configure Random', hidewhen="{ offset_method != 0 }"]]
+    string id_attrib = chs('id_attribute'); // adlParm[[folder=rand_parms,preset=attribSelectInt,help='Uses elemnum if blank']]
+    int seed_primary = 0;
+    if( id_attrib != '' ){
+        seed_primary = getattrib(0, chs('class'), id_attrib, i@elemnum, 0);
+    }
+    else{
+        seed_primary = i@elemnum;
+    }
+    int seed_secondary = chi("secondary_seed"); // adlParm[[folder=rand_parms]]
+    offset_weight = rand(set( seed_primary, seed_secondary));
+}
+else if(offset_method == 1){
+    // adlFolder[[name=weight_parms, type='collapsible', label='Configure Weight', hidewhen="{ offset_method != 1 }"]]
+    offset_weight = getattrib(0, chs('class'), chs('weight_attribute'), i@elemnum, 0); // adlParm[[folder=weight_parms,preset=attribSelectFloat,default='offset_weight']]
+}
+
+float mask = offset_weight*offset_spread;
+mask = clamp( -mask+( t*(1+offset_spread)), 0, 1);
+
+int post_method = chi('post_method'); // adlParm[[default=1, menu_items=('none','gain','ramp'), menu_labels=('None','Gain','Ramp') ]]
+
+
+if(post_method==1){
+    float gain( float x, k ) 
+    {
+        float a = 0.5*pow(2.0*((x<0.5)?x:1.0-x), k);
+        return (x<0.5)?a:1.0-a;
+    }
+    mask = gain(mask,chf('gain_curve')); // adlParm[[default=2, max=4, hidewhen='{ post_method != 1 }']]
+}
+else if(post_method==2){
+    mask = chramp("reshape_mask", mask); // adlParm[[hidewhen="{ post_method != 2 }"]]
+}
+
+setattrib(0,chs('class'),target_attibute,@elemnum,@vtxnum,mask,mode);

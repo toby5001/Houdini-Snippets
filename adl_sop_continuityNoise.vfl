@@ -1,0 +1,321 @@
+// A noise system meant to be paired with an equivalent setup in OSL/VEX for continuity
+// adl_sop_continuityNoise.vfl, by Andrew Louda
+// Modified: 2023-09-06
+
+// This implementation allows for identical behavior between any render engine that supports OSL, and Houdini.
+// There are precision differences when inspecting the results of the hash function, but they broadly don't effect the final result.
+// The VEX fp64 results should be taken as the ground truth, with meaningful deviations being a sign of an implementation issue.
+
+// These defines are mainly to allow for easy interchangability between OSL and VEX
+// Sadly, the function definition format is slightly different between the two,
+// but everything else should easily move between
+
+#define cvec3 set
+#define cvec4 set
+#define mix lerp
+#define smoothstep smooth
+
+// Custom fract function
+// While VEX has an inbuilt fract (frac()), OSL does not
+
+float fract( float in){
+    return in-floor(in);
+}
+
+vector fract( vector in){
+    return in-floor(in);
+}
+
+vector4 fract( vector4 in){
+    return in-floor(in);
+}
+
+// While VEX has an inbuilt fit function, OSL does not
+float fitClamp( float in, omin, omax, nmin, nmax){
+    return (((clamp(in,omin,omax) - omin) * (nmax - nmin)) / (omax - omin)) + nmin;
+}
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+// Hash functions - values should be scaled before input to reduce artifacting
+// Method can be found in Hash Without Sine, by Dave Hoskins
+
+//----------------------------------------------------------------------------------------
+///  3 out, 3 in...
+vector hash33(vector p3i)
+{
+    vector p3 = fract(p3i * cvec3(.1031, .1030, .0973));
+    p3 += dot(p3, cvec3(p3.y,p3.x,p3.z)+33.33);
+    return fract((cvec3(p3.x,p3.x,p3.y) + cvec3(p3.y,p3.x,p3.x))*cvec3(p3.z,p3.y,p3.x));
+}
+
+//----------------------------------------------------------------------------------------
+// 3 out, 4 in...
+vector hash34(vector4 p4i)
+{
+    vector4 p4 = fract(p4i  * cvec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, cvec4(p4.w,p4.z,p4.x,p4.y)+33.33);
+    return fract((cvec3(p4.x,p4.y,p4.z)+cvec3(p4.y,p4.z,p4.w))*cvec3(p4.x,p4.z,p4.w));
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 4 in...
+vector4 hash44(vector4 p4i)
+{
+    vector4 p4 = fract(p4i  * cvec4(.1031, .1030, .0973, .1099));
+    p4 += dot(p4, cvec4(p4.w,p4.z,p4.x,p4.y)+33.33);
+    return fract((cvec4(p4.x,p4.x,p4.y,p4.z)+cvec4(p4.y,p4.z,p4.z,p4.w))*cvec4(p4.z,p4.y,p4.w,p4.x));
+}
+
+//----------------------------------------------------------------------------------------
+// 4 out, 5 in...
+vector4 hash45(vector4 p4i; float f5i)
+{
+    vector4 p4 = fract(p4i  * cvec4(.1031, .1030, .0973, .1099));
+    float f5 = fract(f5i * .1063);
+    float dotval = dot(p4, cvec4(p4.w,p4.z,f5,p4.y)+33.33)+(f5*(p4.x+33.33));
+    p4 += dotval; f5 += dotval;
+    return fract((cvec4(p4.x,p4.y,p4.z,p4.w)+cvec4(p4.y,p4.z,p4.w,f5))*cvec4(f5,p4.y,p4.w,p4.x));
+}
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+// Gradient Noises
+// Method inspired by Inigo Quilez's gradient noise 3D
+#define hscale 228.527
+
+// A 3D gradient noise, which passes an additional seed value.
+float gradnoise3( vector p; float seedval )
+{
+    vector i = floor( p );
+    vector f = fract( p );
+    
+    vector b = f*f*(3.0-2.0*f);
+    
+    vector hashwrap( vector p3i; float sval){
+        vector p3 = hash34(cvec4(p3i.x*hscale, p3i.y*hscale, p3i.z*hscale, sval));
+        return p3*2-1;
+    }
+
+    float valraw =
+    mix( 
+     mix( 
+          mix( 
+               dot( hashwrap( i + cvec3(0.0,0.0,0.0), seedval ), f - cvec3(0.0,0.0,0.0) ),
+               dot( hashwrap( i + cvec3(1.0,0.0,0.0), seedval ), f - cvec3(1.0,0.0,0.0) ), 
+               b.x), 
+          mix( 
+               dot( hashwrap( i + cvec3(0.0,1.0,0.0), seedval ), f - cvec3(0.0,1.0,0.0) ),
+               dot( hashwrap( i + cvec3(1.0,1.0,0.0), seedval ), f - cvec3(1.0,1.0,0.0) ),
+               b.x),
+          b.y),
+     mix( 
+          mix( 
+               dot( hashwrap( i + cvec3(0.0,0.0,1.0), seedval ), f - cvec3(0.0,0.0,1.0) ), 
+               dot( hashwrap( i + cvec3(1.0,0.0,1.0), seedval ), f - cvec3(1.0,0.0,1.0) ), 
+               b.x), 
+          mix( 
+               dot( hashwrap( i + cvec3(0.0,1.0,1.0), seedval ), f - cvec3(0.0,1.0,1.0) ), 
+               dot( hashwrap( i + cvec3(1.0,1.0,1.0), seedval ), f - cvec3(1.0,1.0,1.0) ), 
+               b.x), 
+          b.y), 
+     b.z );
+    return valraw;
+}
+
+// A 4D gradient noise, which passes an additional seed value.
+float gradnoise4( vector4 p; float seedval )
+{
+    vector4 i = floor( p );
+    vector4 f = fract( p );
+
+    vector4 b = f*f*(3.0-2.0*f);
+    
+    vector4 hashwrap( vector4 p4i; float sval){
+        vector4 p4 = hash45(p4i*hscale, sval);
+        return p4*2-1;
+    }
+
+    float valraw =
+    mix(
+    mix( 
+        mix( 
+            mix( 
+               dot( hashwrap( i + cvec4(0.0,0.0,0.0,0.0), seedval ), f - cvec4(0.0,0.0,0.0,0.0) ),
+               dot( hashwrap( i + cvec4(1.0,0.0,0.0,0.0), seedval ), f - cvec4(1.0,0.0,0.0,0.0) ), 
+               b.x), 
+            mix( 
+               dot( hashwrap( i + cvec4(0.0,1.0,0.0,0.0), seedval ), f - cvec4(0.0,1.0,0.0,0.0) ),
+               dot( hashwrap( i + cvec4(1.0,1.0,0.0,0.0), seedval ), f - cvec4(1.0,1.0,0.0,0.0) ),
+               b.x),
+        b.y),
+        mix( 
+            mix( 
+               dot( hashwrap( i + cvec4(0.0,0.0,1.0,0.0), seedval ), f - cvec4(0.0,0.0,1.0,0.0) ), 
+               dot( hashwrap( i + cvec4(1.0,0.0,1.0,0.0), seedval ), f - cvec4(1.0,0.0,1.0,0.0) ), 
+               b.x), 
+            mix( 
+               dot( hashwrap( i + cvec4(0.0,1.0,1.0,0.0), seedval ), f - cvec4(0.0,1.0,1.0,0.0) ), 
+               dot( hashwrap( i + cvec4(1.0,1.0,1.0,0.0), seedval ), f - cvec4(1.0,1.0,1.0,0.0) ), 
+               b.x), 
+        b.y), 
+    b.z ),
+    mix( 
+        mix( 
+             mix( 
+               dot( hashwrap( i + cvec4(0.0,0.0,0.0,1.0), seedval ), f - cvec4(0.0,0.0,0.0,1.0) ),
+               dot( hashwrap( i + cvec4(1.0,0.0,0.0,1.0), seedval ), f - cvec4(1.0,0.0,0.0,1.0) ), 
+               b.x), 
+            mix( 
+               dot( hashwrap( i + cvec4(0.0,1.0,0.0,1.0), seedval ), f - cvec4(0.0,1.0,0.0,1.0) ),
+               dot( hashwrap( i + cvec4(1.0,1.0,0.0,1.0), seedval ), f - cvec4(1.0,1.0,0.0,1.0) ),
+               b.x),
+        b.y),
+        mix( 
+            mix( 
+               dot( hashwrap( i + cvec4(0.0,0.0,1.0,1.0), seedval ), f - cvec4(0.0,0.0,1.0,1.0) ), 
+               dot( hashwrap( i + cvec4(1.0,0.0,1.0,1.0), seedval ), f - cvec4(1.0,0.0,1.0,1.0) ), 
+               b.x), 
+            mix( 
+               dot( hashwrap( i + cvec4(0.0,1.0,1.0,1.0), seedval ), f - cvec4(0.0,1.0,1.0,1.0) ), 
+               dot( hashwrap( i + cvec4(1.0,1.0,1.0,1.0), seedval ), f - cvec4(1.0,1.0,1.0,1.0) ), 
+               b.x), 
+        b.y), 
+    b.z ),
+    b.w);
+    return valraw;
+}
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+// Voronoi/Cellular Noises
+
+
+// A 3D Voronoi Noise, with a basic time-varying method
+float voronoi3_4_basic( vector p; float mtime, seedval ){
+    // Configure initial values
+    float degree = 1;
+    float exponent = 2;
+
+    // Tile the space
+    vector i_pos = floor(p);
+    vector f_pos = fract(p);
+
+    float f1 = 1.;
+    float f2 = f1;
+    float f3 = f2;
+    float cellval = 0;
+
+    for (int y= -1; y <= 1; y++) {
+        for (int x= -1; x <= 1; x++) {
+            for (int z= -1; z <= 1; z++) {
+                // Get grid position of current neighbor
+                vector neighbor = cvec3(float(x),float(y),float(z));
+
+                // Random position from current + neighbor place in the grid
+                vector4 randsource = cvec4(i_pos[0] + neighbor[0], i_pos[1] + neighbor[1], i_pos[2] + neighbor[2], seedval);
+                vector randpoint = mix(0, vector(hash34( randsource*hscale))*2-1, degree);
+                // There are two different methods for animating the point, each with a tradeoff of either cost or flexibility
+                randpoint = 0.5 + 0.5*sin(mtime * M_PI + randpoint * 6.2831);
+
+                // Vector between the pixel and the point
+                vector diff = neighbor + randpoint - f_pos;
+
+                // Distance computation method
+                // float dist = length(diff);
+                // float dist = pow(pow(abs(diff), exponent) + pow(abs(diff), exponent), 1 / exponent);
+                float dist = pow(pow(abs(diff[0]), exponent) + pow(abs(diff[1]), exponent) + pow(abs(diff[2]), exponent), 1.0 / exponent);
+
+                // Keep the closer distance
+                if(dist<f1){
+                    f2=f1;
+                    f1=dist;
+                }
+                else if(dist<f2){
+                    f2=dist;
+                }
+            }
+        }
+    }
+    return f2-f1;
+}
+
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+// A basic fbm function, with support for non-integer octaves
+float fbm_f(vector coords; float foctaves, lacunarity, gain, mtime, seed) {
+    // Initial values
+    vector pdat = coords;
+    float value = 0.0;
+    float amplitude = .5;
+
+    int octavesf = int(floor(foctaves));
+    float octblend = fract(foctaves);
+
+    // Loop of octaves
+    for (int i = 0; i < octavesf; i++) {
+        value += amplitude * gradnoise4(cvec4(pdat.x,pdat.y,pdat.z,mtime),seed+i);
+        pdat *= lacunarity;
+        amplitude *= gain;
+    }
+    
+    // Blend between octaves, allowing for smooth per-point octave variation
+    if(octblend != 0) value += amplitude * gradnoise4(cvec4(pdat.x,pdat.y,pdat.z,mtime),seed+octavesf) * octblend;
+    // Rescale values and adjust range for output
+    return smoothstep(0.15, 0.85, (value+1)/2);
+    // return fitClamp((value+1)/2, 0.15, 0.85, 0, 1);
+}
+
+// V2 of implementing a hybrid multifractal as shown by F. Kenton Musgrave in "2 Procedural Fractal terrains". Still a WIP as there is no easy way to control the gain like with FBM
+// Distortion near 0 is avoided by offseting each each octave's seed by the current octave number
+// As of right now it is difficult to swap out the basis function to another one. 
+// It would benneficial to decouple the fractal and basis from each other so that others like 1-abs(perlin) or any voronoi-based could be used
+float hmf_f(vector coords; float foctaves, lacunarity, gain, mtime, seed) {
+    // Initial values
+    vector pdat = coords;
+    float ingain = 0.5;
+    float result = 0.0;
+    float signal;
+    float mask = 1.0;
+    float amplitude = 0.5;
+
+    int octavesf = int(floor(foctaves));
+    float octblend = fract(foctaves);
+
+    // Loop of octaves
+    for (int i = 0; i < octavesf; i++) {
+        signal = gradnoise4(cvec4(pdat.x,pdat.y,pdat.z,mtime),seed+i);
+        result += signal*mask;
+        // Changing the effective center and width of the fit below can have drastic effects in the final look. Would be helpful to parameterize
+        mask *= fitClamp( (signal+1)/2, 0.25, 0.85, 0, 1);
+        // This prevents peak values from exiting the 0-1 range, but comes at the cost of reducing the sharpness of the highest peaks dramatically
+        mask = clamp(mask, 0, amplitude);
+        pdat *= lacunarity;
+        amplitude *= ingain;
+    }
+    
+    // Blend between octaves, allowing for smooth per-point octave variation
+    if(octblend != 0) result += mask * gradnoise4(cvec4(pdat.x,pdat.y,pdat.z,mtime),seed+octavesf) * octblend;
+    // Rescale values and adjust range for output
+    result = (result+1)/2;
+    result = clamp(result, 0, 1);
+    return result;
+}
+
+vector pos = v@P;
+
+float stepval = chf("stepval");
+float uscale = chf("uscale");
+float octaves = chf("octaves");
+float seed = chf("seed");
+float manual_time = chf("time");
+
+// Mainly for debugging, allows for distinct hash values to be easily compared
+if( stepval > 0) pos = floor(pos/stepval)*stepval;
+pos *= uscale;
+
+@P.y =  hmf_f( pos, octaves, 2.015, 0.5, manual_time, seed);

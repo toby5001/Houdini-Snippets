@@ -1,0 +1,70 @@
+// Spins items using an existing weight . Can be applied to either packed primitives or most standard instance attributes.
+// adl_sop_spinByWeight.vfl, by Andrew Louda
+// Modified: 2024-05-26 - Initial asset
+// Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+/* 
+    The core functionality of this snippet is very simple, but it has been generalized so that it can operate on many different types of attributes.
+    Spin weight is expected to be a vector ranging from -1 to 1 (though it can be whatever you want), 
+    with max_rotate dictating the maximum rotation in degrees.
+*/
+
+vector rotamt = radians(chv("max_rotate")) * v@spinweight;
+vector4 qspin = eulertoquaternion(rotamt,0);
+
+string output_type = chs('output_type'); // adlParm[[menu_pairs={'orient':'Orient','rot':'Rot','transform3':'Transform (3x3)','transform4':'Transform (4x4)','packed':'Packed Prims'} ]]
+
+if(output_type == 'orient'){
+    vector4 baseorient;
+    if( hasattrib(0,chs('class'),'orient') ){
+        baseorient = attrib(0,chs('class'),'orient',@elemnum); 
+    }
+    else{
+        vector N = hasattrib(0,chs('class'),'N') ? normalize(v@N) : {0,1,0};
+        vector up = hasattrib(0,chs('class'),'up') ? normalize(v@up) : {0,0,-1};
+        baseorient = quaternion( chi('swap_n_up') ? maketransform( up, N) : maketransform( N, up) );  // adlParm[[type=toggle,hidewhen='{ output_type != orient }',help='If using N-up for base orient, swap which vector is used for which.' ]]
+    }
+    vector4 neworient = qmultiply(baseorient, qspin);
+    setattrib( 0, chs('class'), 'orient', @elemnum, @vtxnum, neworient, 'set');
+}
+
+else if(output_type == 'rot'){
+    vector4 newrot;
+    if( hasattrib(0,chs('class'),'rot') ){
+        vector4 baserot = attrib(0,chs('class'),'rot',@elemnum);
+        newrot = qmultiply(baserot, qspin);
+    }
+    else newrot = qspin;
+    setattrib( 0, chs('class'), 'rot', @elemnum, @vtxnum, newrot, 'set');
+}
+
+else if(output_type == 'transform3'){
+    if( hasattrib(0,chs('class'),'transform') ){
+        matrix3 xform = getattrib(0,chs('class'),'transform',@elemnum,0);
+        chi('prerotate') ? prerotate(xform,rotamt,0) : rotate(xform,rotamt,0);  // adlParm[[type=toggle,hidewhen='{ output_type == orient } { output_type == rot }']]
+        setattrib( 0, chs('class'), 'transform', @elemnum, @vtxnum, xform, 'set');
+    }
+    else{
+        matrix3 xform = qconvert(qspin);
+        setattrib( 0, chs('class'), 'transform', @elemnum, @vtxnum, xform, 'set');
+    }
+}
+
+else if(output_type == 'transform4'){
+    if( hasattrib(0,chs('class'),'transform') ){
+        matrix xform = getattrib(0,chs('class'),'transform',@elemnum,0);
+        chi('prerotate') ? prerotate(xform,rotamt,0) : rotate(xform,rotamt,0);
+        setattrib( 0, chs('class'), 'transform', @elemnum, @vtxnum, xform, 'set');
+    }
+    else{
+        matrix xform = qconvert(qspin);
+        setattrib( 0, chs('class'), 'transform', @elemnum, @vtxnum, xform, 'set');
+    }
+}
+
+else if(output_type == 'packed'){
+    matrix3 base_xform = primintrinsic(0,'transform',@elemnum);
+    chi('prerotate') ? prerotate(base_xform,rotamt,0) : rotate(base_xform,rotamt,0);
+    setprimintrinsic(0,'transform',@elemnum,base_xform,'set');
+}
