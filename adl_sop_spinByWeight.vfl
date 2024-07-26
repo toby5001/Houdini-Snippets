@@ -13,7 +13,7 @@
 vector rotamt = radians(chv("max_rotate")) * v@spinweight;
 vector4 qspin = eulertoquaternion(rotamt,0);
 
-string output_type = chs('output_type'); // adlParm[[menu_pairs={'orient':'Orient','rot':'Rot','transform3':'Transform (3x3)','transform4':'Transform (4x4)','packed':'Packed Prims'} ]]
+string output_type = chs('output_type'); // [[menu_pairs={'orient':'Orient','rot':'Rot','transform3':'Transform (3x3)','transform4':'Transform (4x4)','packed':'Packed Prims'} ]]
 
 if(output_type == 'orient'){
     vector4 baseorient;
@@ -23,7 +23,7 @@ if(output_type == 'orient'){
     else{
         vector N = hasattrib(0,chs('class'),'N') ? normalize(v@N) : {0,1,0};
         vector up = hasattrib(0,chs('class'),'up') ? normalize(v@up) : {0,0,-1};
-        baseorient = quaternion( chi('swap_n_up') ? maketransform( up, N) : maketransform( N, up) );  // adlParm[[type=toggle,hidewhen='{ output_type != orient }',help='If using N-up for base orient, swap which vector is used for which.' ]]
+        baseorient = quaternion( chi('swap_n_up') ? maketransform( up, N) : maketransform( N, up) );  // [[type=toggle,hidewhen='{ output_type != orient }',help='If using N-up for base orient, swap which vector is used for which.' ]]
     }
     vector4 neworient = qmultiply(baseorient, qspin);
     setattrib( 0, chs('class'), 'orient', @elemnum, @vtxnum, neworient, 'set');
@@ -42,7 +42,7 @@ else if(output_type == 'rot'){
 else if(output_type == 'transform3'){
     if( hasattrib(0,chs('class'),'transform') ){
         matrix3 xform = getattrib(0,chs('class'),'transform',@elemnum,0);
-        chi('prerotate') ? prerotate(xform,rotamt,0) : rotate(xform,rotamt,0);  // adlParm[[type=toggle,hidewhen='{ output_type == orient } { output_type == rot }']]
+        chi('prerotate') ? prerotate(xform,rotamt,0) : rotate(xform,rotamt,0);  // [[type=toggle,hidewhen='{ output_type == orient } { output_type == rot }']]
         setattrib( 0, chs('class'), 'transform', @elemnum, @vtxnum, xform, 'set');
     }
     else{

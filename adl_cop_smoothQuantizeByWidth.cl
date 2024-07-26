@@ -13,7 +13,7 @@
 {
     #bind layer step_count? float
     #bind parm step_count_ float val=5. 
-    // [[parm=step_count_, min=1, max=10, default=5, disablewhen='{ hasinput(1) == 1 }']]
+    // [[ parm=step_count_, min=1, max=10, default=5, disablewhen='{ hasinput(1) == 1 }']]
     float step_count = @step_count.bound ? @step_count : @step_count_;
 
     #bind layer width? float
@@ -23,12 +23,12 @@
 
     #bind layer enable_ramp? int
     #bind parm enable_ramp_ int val=0
-    // adlParm[[ parm=enable_ramp_, type=toggle, disablewhen='{ hasinput(3) == 1 }']]
+    // [[ parm=enable_ramp_, type=toggle, disablewhen='{ hasinput(3) == 1 }']]
     int enable_ramp = @enable_ramp.bound ? @enable_ramp : @enable_ramp_;
 
     #bind ramp ramp_steps float val=0
     // adlFolder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp_'} ]]
-    // adlParm[[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp_ == 0 hasinput(3) == 0 }' ]]
+    // [[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp_ == 0 hasinput(3) == 0 }' ]]
 
     float value = @src;
 

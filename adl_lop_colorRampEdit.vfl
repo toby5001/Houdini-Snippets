@@ -15,7 +15,7 @@
 // of the relevant arrays.
 
 // Main Settings
-string target_render_engine = chs("target_render_engine"); // adlParm[[ menu_items=('Arnold','Redshift','Renderman') ]]
+string target_render_engine = chs("target_render_engine"); // [[ menu_items=('Arnold','Redshift','Renderman') ]]
 
 string rampname = "new_ramp";
 vector(chramp( "new_ramp", 0));

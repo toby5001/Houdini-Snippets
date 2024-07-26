@@ -6,25 +6,25 @@
 
 #define fallbackAttrib f@`chs('target_attribute')`
 #if `ch('class')`
-float value = getattrib(0,chs('class'),chs('target_attribute'),@elemnum,0); // adlParm[[default=mask,preset=attribSelectFloat]] adlParm[[parm='class',hidden=1]]
+float value = getattrib(0,chs('class'),chs('target_attribute'),@elemnum,0); // [[default=mask,preset=attribSelectFloat]] adlParm[[parm='class',hidden=1]]
 #else
 float value = fallbackAttrib;
 #endif
 
-float stepnum = chf('step_count'); // adlParm[[ parm=step_count, min=1, max=10, default=5, replace=1]]
+float stepnum = chf('step_count'); // [[ parm=step_count, min=1, max=10, default=5, replace=1]]
 
 float valfloor = floor( value*stepnum ) / stepnum;
 
 float remainder = (value-valfloor)*stepnum;
 
-float width = (1-chf('width'))/2; // adlParm[[ parm=width, default=0.5]]
+float width = (1-chf('width'))/2; // [[ parm=width, default=0.5]]
 
 remainder = fit(remainder, 0+width, 1-width,0,1);
 
 if( chi('enable_ramp') ) remainder = chramp('ramp_steps', remainder);
-// adlParm[[ parm=enable_ramp, type=toggle ]]
+// [[ parm=enable_ramp, type=toggle ]]
 // adlFolder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp'} ]]
-// adlParm[[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp != 1 }' ]]
+// [[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp != 1 }' ]]
 
 value = valfloor+remainder/stepnum;
 
