@@ -21,8 +21,8 @@ if(output_type == 'orient'){
         baseorient = attrib(0,chs('class'),'orient',@elemnum); 
     }
     else{
-        vector N = hasattrib(0,chs('class'),'N') ? normalize(v@N) : {0,1,0};
-        vector up = hasattrib(0,chs('class'),'up') ? normalize(v@up) : {0,0,-1};
+        vector N = hasattrib(0,chs('class'),'N') ? normalize(attrib(0,chs('class'),'N',@elemnum)) : {0,1,0};
+        vector up = hasattrib(0,chs('class'),'up') ? normalize(attrib(0,chs('class'),'up',@elemnum)) : {0,0,-1};
         baseorient = quaternion( chi('swap_n_up') ? maketransform( up, N) : maketransform( N, up) );  // [[type=toggle,hidewhen='{ output_type != orient }',help='If using N-up for base orient, swap which vector is used for which.' ]]
     }
     vector4 neworient = qmultiply(baseorient, qspin);
