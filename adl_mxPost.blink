@@ -1,0 +1,122 @@
+// Inspired by the post-processing system that comes with the maxon noise system. This allows for per-shading-point variation and use outside of maxon noise.
+// adl_mxPost.blink, by Andrew Louda
+// Modified: 2024-08-03 - Initial creation
+// Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+kernel adl_mxPost : ImageComputationKernel<ePixelWise>
+{
+  Image<eRead, eAccessPoint, eEdgeClamped> src; // the input image
+  Image<eWrite> dst; // the output image
+
+  param:
+    int channels;
+    float cycles;
+    float cycles_phase;
+    int smooth_cycles;
+    float lowclip;
+    float highclip;
+    float brightness;
+    float contrast;
+
+  // In define(), parameters can be given labels and default values.
+  void define() {
+    defineParam(channels, "Channels", 4);
+    defineParam(cycles, "Cycles", 0.0f);
+    defineParam(cycles_phase, "Cycles Phase", 0.0f);
+    defineParam(smooth_cycles, "Smooth Cycles", 1);
+    defineParam(lowclip, "Low Clip", 0.0f);
+    defineParam(highclip, "High Clip", 1.0f);
+    defineParam(brightness, "Brightness", 0.0f);
+    defineParam(contrast, "Contrast", 0.0f);
+  }
+
+  float mix(float x, float y, float a){ return x*(1-a)+y*a; }
+
+  float fit(float valin, float InStart, float InEnd, float OutStart, float OutEnd){
+    float fac = (clamp(valin,InStart,InEnd) - InStart) / (InEnd - InStart);
+    return OutStart + fac * (OutEnd - OutStart);
+  }
+
+  float mx_Cycle(float In, float fmodval, float cycles_phase, int smoothcycles){
+    float outval;
+    #define fmod_setup(In,fmodval) (fabs(fmod(In+cycles_phase/fmodval*2.0f,1.0f/(fmodval*0.5f))*(fmodval*0.5f)))
+    #define rerange(val) (1.0f-(fabs(val-0.5f)*2.0f))
+    //This is not a pixel-perfect match with the smoothing used within maxon noise's cycles, but it's incredibly close. This function is seemingly identical to the inbuilt smoothstep function.
+    #define BezierBlend(t) (t*t*(3.0f-2.0f*t))
+    if(fmodval >= 1){
+      outval = fmod_setup( In, fmodval);
+      outval = rerange(outval);
+      if(smoothcycles){
+        outval = BezierBlend(outval);
+      }
+    }
+    else{
+      outval = fmod_setup( In, 1);
+      outval = rerange(outval);
+      if(smoothcycles){
+        outval = BezierBlend(outval);
+      }
+      outval = mix(In, outval, fmodval);
+    }
+    return outval;
+  }
+
+  float mx_Clip(float colorcomp, float lowclip, float highclip){
+    float Out;
+    if( lowclip == highclip ){
+      Out = colorcomp>=lowclip?1:0;
+    }
+    else{
+      Out = fit(colorcomp, lowclip, highclip, 0.0f, 1.0f);
+    }
+    return Out;
+  }
+
+  float mx_Brightness(float In, float brightness){
+    float Out = clamp(In + brightness, 0.0f, 1.0f);
+    return Out;
+  }
+
+  float mx_Contrast(float colorcomp, float contrast){
+    float colorout;
+    if(contrast==1){
+      colorout = colorcomp>=0.5?1:0;
+    }
+    else if(contrast>0){
+      float distance = (1-contrast)/2;        
+      colorout = fit(colorcomp, 0.5-distance, 0.5+distance, 0, 1);
+    }
+    else if(contrast==-1){
+      colorout = 0.5;
+    }
+    else if(contrast<0){
+      float distance = (contrast*-1)/2;
+      colorout = fit(colorcomp, 0, 1, 0+distance, 1-distance);
+    }
+    return colorout;
+  }
+
+  void process() {
+    // Read the input image
+    SampleType(src) input = src();
+
+    float4 val = float4(input.x, input.y, input.z, input.w);
+      for(int i = 0; i < channels; i++){
+        if(cycles>0){
+          val[i] = mx_Cycle(val[i],cycles,cycles_phase,smooth_cycles);
+        }
+        if(lowclip > 0 || highclip < 1){
+          val[i] = mx_Clip(val[i],lowclip,highclip);
+        }
+        if(brightness != 0){
+          val[i] = mx_Brightness(val[i],brightness);
+        }
+        if(contrast != 0){
+          val[i] = mx_Contrast(val[i],contrast);
+        }
+      }
+    // Write the result to the output image
+    dst() = val;
+  }
+};
