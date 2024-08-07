@@ -1,0 +1,22 @@
+// This constrains incoming velocity to being relative to a target surface, along with attracting the particles to the nearest surface.
+// adl_pop_velocityToSurface.vfl, by Andrew Louda
+// Modified: 2024-08-07 - Initial creation
+// Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+// This expects the second input for this wrangle to be the target geometry you want to keep the particles constrained to
+// The snippet should either work in a POP wrangle or a geometry wrangle set to Points
+// For added detail and interesting behavior combine this with a popgrains and a static collider
+
+// Get nearest surface primitive and coordinates alongside it's corresponding distance
+int surface_prim; vector surface_uvw;
+float dist = xyzdist(1, v@P, surface_prim, surface_uvw);
+
+vector nearN = primuv(1, 'N', surface_prim, surface_uvw);
+vector nearP = primuv(1, 'P', surface_prim, surface_uvw);
+
+// restrict the input velocity to be tangent to the surface normal
+v@v = v@v - ( nearN * dot(v@v, nearN) );
+
+// This functions as a form of local gravity to push particles in the direction of the nearest surface.
+v@v += dist * normalize(nearP - v@P) * chf('surface_attract_scale'); // [[max=8]]
