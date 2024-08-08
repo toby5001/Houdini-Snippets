@@ -18,8 +18,8 @@ vector nearP = primuv(1, 'P', surface_prim, surface_uvw);
 float falloff = 1;
 if(chi('enable_falloff')){ // [[type=toggle]]
     // folder[[name=distance_falloff, type=collapsible, tags={'sidefx::header_toggle':'enable_falloff'}, disablewhen='{ enable_falloff != 1 }']]
-    falloff = fit(dist,chf('falloff_start'),chf('falloff_start')+chf('falloff_length'); // [[parm=falloff_start,default=0.256,folder=distance_falloff]] [[parm=falloff_length,default=0.256,folder=distance_falloff]]
-    falloff = chramp('remap_falloff',falloff,1,0)); // [[folder=distance_falloff]]
+    falloff = fit(dist,chf('falloff_start'),chf('falloff_start')+chf('falloff_length'),1,0); // [[parm=falloff_start,default=0.256,folder=distance_falloff]] [[parm=falloff_length,default=0.256,folder=distance_falloff]]
+    falloff = chramp('remap_falloff',falloff); // [[folder=distance_falloff]]
     f@falloff = falloff;
 }
 
