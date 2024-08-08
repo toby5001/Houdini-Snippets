@@ -7,7 +7,7 @@
 // This expects the second input for this wrangle to be the target geometry you want to keep the particles constrained to
 // The snippet should either work in a POP wrangle or a geometry wrangle set to Points
 // For added detail and interesting behavior combine this with a popgrains and a static collider
-// meta[[disableall=1]]
+
 // Get nearest surface primitive and coordinates alongside it's corresponding distance
 int surface_prim; vector surface_uvw;
 float dist = xyzdist(1, v@P, surface_prim, surface_uvw);
