@@ -18,7 +18,7 @@ int offset_method = chi('offset_method'); // [[menu_items=('rand','weight'), men
 float offset_weight = 0;
 
 if(offset_method == 0){
-    // adlFolder[[name=rand_parms, type='collapsible', label='Configure Random', hidewhen="{ offset_method != 0 }"]]
+    // folder[[name=rand_parms, type='collapsible', label='Configure Random', hidewhen="{ offset_method != 0 }"]]
     string id_attrib = chs('id_attribute'); // [[folder=rand_parms,preset=attribSelectInt,help='Uses elemnum if blank']]
     int seed_primary = 0;
     if( id_attrib != '' ){
@@ -31,7 +31,7 @@ if(offset_method == 0){
     offset_weight = rand(set( seed_primary, seed_secondary));
 }
 else if(offset_method == 1){
-    // adlFolder[[name=weight_parms, type='collapsible', label='Configure Weight', hidewhen="{ offset_method != 1 }"]]
+    // folder[[name=weight_parms, type='collapsible', label='Configure Weight', hidewhen="{ offset_method != 1 }"]]
     offset_weight = getattrib(0, chs('class'), chs('weight_attribute'), i@elemnum, 0); // [[folder=weight_parms,preset=attribSelectFloat,default='offset_weight']]
 }
 

@@ -23,7 +23,7 @@ remainder = fit(remainder, 0+width, 1-width,0,1);
 
 if( chi('enable_ramp') ) remainder = chramp('ramp_steps', remainder);
 // [[ parm=enable_ramp, type=toggle ]]
-// adlFolder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp'} ]]
+// folder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp'} ]]
 // [[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp != 1 }' ]]
 
 value = valfloor+remainder/stepnum;

@@ -27,7 +27,7 @@
     int enable_ramp = @enable_ramp.bound ? @enable_ramp : @enable_ramp_;
 
     #bind ramp ramp_steps float val=0
-    // adlFolder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp_'} ]]
+    // folder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp_'} ]]
     // [[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp_ == 0 hasinput(3) == 0 }' ]]
 
     float value = @src;
