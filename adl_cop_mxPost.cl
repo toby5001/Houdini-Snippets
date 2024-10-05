@@ -131,6 +131,7 @@ float mx_Contrast(float colorcomp, float contrast){
     #if @src.channels > 1
         float4 val = (float4)(@src[0], @src[1], @src[2], @src[3]);
         float4 ringid = 0;
+        // TODO: consider switching to vector functions, which might be faster
         for(int i = 0; i < @src.channels; i++){
             if(cycles>0){
                 ringid[i] = rint((val[i]*cycles/2)+cycles_phase-0.5);
@@ -144,9 +145,9 @@ float mx_Contrast(float colorcomp, float contrast){
             }
             if(contrast != 0){
                 val[i] = mx_Contrast(val[i],contrast);
+            }
         }
         @dst.set(val);
         @ringid.set(ringid);
-    }
     #endif
 }
