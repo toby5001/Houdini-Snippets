@@ -1,0 +1,42 @@
+// Rotates a camera around a given target, either a primitive or a definied location.
+// adl_lop_spinAroundTarget.vfl, by Andrew Louda
+// Modified: 2024-10-07
+// Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+int spinMethod = chi("spin_method");  // [[ hjoin=1, menu_pairs={'primTarget':'Primitive Target','manual':'Manual'} ]]
+string spinPrimPath = chs("spin_primitive");  // [[ preset='lopPrimSelect', disablewhen="{ spin_method == 1 }" ]]
+// folder[[name=Manual,type=borderless,hidewhen="{ spin_method != 1 }"]]
+vector spinCenter = chv("spin_center"); // [[folder=Manual]]
+vector spinRotation = chv("spin_rotation"); // [[folder=Manual]]
+
+// Get world and local transform info of the operating primitive (presumably a camera)
+matrix camXform = usd_worldtransform(0, @primpath);
+vector camPos = cracktransform(0, 0, 0, 0, camXform);
+
+// If the camera isn't at the root of the scene, apply an inversion of the world transform of the parent primitive
+matrix xform = camXform;
+string parent = usd_parentpath(0, s@primpath);
+if (parent != "/" && usd_istype(0, parent, "UsdGeomXformable")) xform *= invert(usd_worldtransform(0, parent));
+
+// Get appropriate matrix for the target
+matrix targetXform;
+if( spinMethod == 0){
+    // Get world and local transform info for spin prim
+    targetXform = usd_worldtransform(0, spinPrimPath);
+}
+if( spinMethod == 1){
+    // Construct transform matrix using manual coordinates.
+    // Assumes standard TRS and XYZ order
+    targetXform = maketransform(0,0,spinCenter,spinRotation,1);
+}
+
+// Translate camera to center relative to the target xform, before applying it's matrix
+vector targetPos = cracktransform(0, 0, 0, 0, targetXform);
+translate(xform, -targetPos);
+xform *= targetXform;
+
+// Remove all previous transformation operations, as they have been baked into this current operation
+usd_cleartransformorder(0, @primpath);
+usd_addtransform( 0, @primpath, '', xform);
+s[]@xformOpOrder = {"xformOp:transform"};
