@@ -19,24 +19,29 @@ vector nearP = primuv(1, 'P', surface_prim, surface_uvw);
 // folder[[name=main_parameters, label=Main, type=tabs,independent=1, ends_tab_group=1]]
 // folder[[name=details, type=tabs, ends_tab_group=1, independent=1]]
 
-// folder[[name=distance_falloff, parent_folder=details, label="Distance-Based Falloff", type=collapsible, tags={'sidefx::header_toggle':'enable_falloff'}, disablewhen='{ enable_falloff != 1 }']]
-float falloff = 1.; float attract_falloff = 1.;
-if(chi('enable_falloff')){ // [[type=toggle,folder=details]]
+// folder[[name=distance_falloff, independent=1, parent_folder=main_parameters, label="Distance-Based Falloff", type=collapsible, tags={'sidefx::header_toggle':'enable_falloff'}, disablewhen='{ enable_falloff != 1 }']]
+float falloff = 1.;
+int enable_falloff = chi('enable_falloff'); // [[type=toggle,folder=main_parameters]]
+if(enable_falloff){
     falloff = fit(dist,chf('distance_min'),chf('distance_max'),1,0); // [[parm=distance_min,default=0.1,folder=distance_falloff]] [[parm=distance_max,default=0.5,folder=distance_falloff]]
     falloff = chramp('remap_falloff',falloff); // [[folder=distance_falloff]]
-    attract_falloff = chi('invert_attract_falloff') ? 1-falloff : falloff; // [[folder=distance_falloff,type=toggle,default=1]]
 }
 // export the falloff attribute for debugging and potential use in other parts of the network
 f@surface_falloff = falloff;
 
 // Restrict the input velocity to be tangent to the surface normal, blending with the original by a user-defined value.
 // folder[[name=velocity_surface_constraint,type=simple,parent_folder=main_parameters,independent=1]]
-v@v = v@v - lerp(0,(nearN*dot(v@v,nearN)), falloff*chf('v_constraint_blend') ); // [[label='Velocity Blend',folder=velocity_surface_constraint,default=1]]
+float constraint_falloff = chi('constraint_use_falloff') && enable_falloff ? falloff : 1.; // [[folder=velocity_surface_constraint,label='Use Falloff',type=toggle,default=1,disablewhen='{ enable_falloff != 1 }']]
+v@v = v@v - lerp(0,(nearN*dot(v@v,nearN)), constraint_falloff*chf('v_constraint_blend') ); // [[label='Velocity Blend',folder=velocity_surface_constraint,default=1]]
 
 
 // folder[[name=surface_attraction, type=simple, parent_folder=main_parameters]]
+float attract_falloff = 1.;
+if(chi('attract_use_falloff') && enable_falloff){ // [[folder=surface_attraction,label='Use Falloff',type=toggle,default=1, hjoin=1, disablewhen='{ enable_falloff != 1 }']]
+    attract_falloff = chi('invert_attract_falloff') ? 1-falloff : falloff; // [[folder=surface_attraction,label='Invert Falloff',type=toggle,default=1, disablewhen='{ enable_falloff != 1 }{ attract_use_falloff != 1 }']]
+}
 vector attract = attract_falloff * dist * normalize(nearP - v@P) * chf('surface_attract_scale'); // [[folder=surface_attraction, max=10, default=1]]
-int attract_type = chi('attract_type'); // [[folder=surface_attraction, type=menu, default=1, menu_items=('Simple Add to Velocity', 'Update Force')]]
+int attract_type = chi('attract_type'); // [[folder=surface_attraction, type=menu, default=1,menu_items=('Simple Add to Velocity', 'Update Force')]]
 if(attract_type==0){
 // Simply adds attract to the current velocity
     // This functions as a form of local gravity to push particles in the direction of the nearest surface.
