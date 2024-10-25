@@ -35,7 +35,7 @@ v@v = v@v - lerp(0,(nearN*dot(v@v,nearN)), falloff*chf('v_constraint_blend') ); 
 
 
 // folder[[name=surface_attraction, type=simple, parent_folder=main_parameters]]
-vector attract = attract_falloff * dist * normalize(nearP - v@P) * chf('surface_attract_scale'); // [[folder=surface_attraction, max=10, default=1, hidewhen='{ attract_type != 0 }']]
+vector attract = attract_falloff * dist * normalize(nearP - v@P) * chf('surface_attract_scale'); // [[folder=surface_attraction, max=10, default=1]]
 int attract_type = chi('attract_type'); // [[folder=surface_attraction, type=menu, menu_items=('Simple Add to Velocity', 'Update Force')]]
 if(attract_type==0){
 // Simply adds attract to the current velocity
