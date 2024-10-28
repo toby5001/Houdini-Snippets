@@ -1,15 +1,15 @@
 // Sets a camera's focus distance by a given object, with support for blending between a preexisting focal point, and offsetting.
 // adl_lop_focusToObject.vfl, by Andrew Louda
-// Modified: 2024-05-24
+// Modified: 2024-10-27 - Updated to new paramter syntax
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
 string focusPrimPath = chs("focus_primitive");  // [[ preset='lopPrimSelect' ]]
-int focusMethod = chi("focus_method");  // [[ hjoin=1, menu_pairs={'primWorldPos':'Primitive World Position','primCentroid':'Primitive Centroid'} ]]
-string focusPrimPurpose = chs("focus_prim_purpose");  // [[ default='default', hidewhen="{ focus_method != 1 }", menu_items=('default','proxy','render','guide') ]]
+int focusMethod = chi("focus_method");  // [[ join_with_next=1, menu_pairs={'primWorldPos':'Primitive World Position','primCentroid':'Primitive Centroid'} ]]
+string focusPrimPurpose = chs("focus_prim_purpose");  // [[ default='default', hide_when="{ focus_method != 1 }", menu_items=('default','proxy','render','guide') ]]
 
-int enableBlend = chi("enable_blend");  // [[type="toggle", default=0, hjoin=1]]
-float focusBlend = chf("focus_blend");  // [[default=1, min=0, max=1, disablewhen='{ enable_blend != 1 }', minlock=1, maxlock=1]]
+int enableBlend = chi("enable_blend");  // [[is_toggle, default=0, join_with_next=1]]
+float focusBlend = chf("focus_blend");  // [[default=1, min=0, max=1, disable_when='{ enable_blend != 1 }', min_is_strict=1, max_is_strict=1]]
 float focusOffset = chf("focus_offset");  // [[min=-1, max=1]]
 
 if( enableBlend && focusBlend == 0){

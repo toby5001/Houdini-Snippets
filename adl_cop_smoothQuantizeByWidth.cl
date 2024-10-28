@@ -1,6 +1,6 @@
 // Quantize an incoming attribute by a defined number of steps, with smooth transitions between values
 // adl_cop_smoothQuantizeByWidth.cl, by Andrew Louda
-// Modified: 2024-07-21
+// Modified: 2024-10-27 - Updated to new paramter syntax
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -13,22 +13,22 @@
 {
     #bind layer step_count? float
     #bind parm step_count_ float val=5. 
-    // [[ parm=step_count_, min=1, max=10, default=5, disablewhen='{ hasinput(1) == 1 }']]
+    // [[ parm=step_count_, min=1, max=10, default=5, disable_when='{ hasinput(1) == 1 }']]
     float step_count = @step_count.bound ? @step_count : @step_count_;
 
     #bind layer width? float
     #bind parm width_ float val=.5
-    // [[ parm=width_, default=0.5, disablewhen='{ hasinput(2) == 1 }']]
+    // [[ parm=width_, default=0.5, disable_when='{ hasinput(2) == 1 }']]
     float width = @width.bound ? @width : @width_;
 
     #bind layer enable_ramp? int
     #bind parm enable_ramp_ int val=0
-    // [[ parm=enable_ramp_, type=toggle, disablewhen='{ hasinput(3) == 1 }']]
+    // [[ parm=enable_ramp_, is_toggle, disable_when='{ hasinput(3) == 1 }']]
     int enable_ramp = @enable_ramp.bound ? @enable_ramp : @enable_ramp_;
 
     #bind ramp ramp_steps float val=0
-    // folder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp_'} ]]
-    // [[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp_ == 0 hasinput(3) == 0 }' ]]
+    // folder[[name=rampconfig, label='Step Ramp', folder_type=collapsible, tags={'sidefx::header_toggle':'enable_ramp_'} ]]
+    // [[ parm='ramp_steps', folder=rampconfig, disable_when='{ enable_ramp_ == 0 hasinput(3) == 0 }' ]]
 
     float value = @src;
 

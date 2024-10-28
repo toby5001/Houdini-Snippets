@@ -1,11 +1,11 @@
 // Quantize an incoming attribute by a defined number of steps, with smooth transitions between values
 // adl_sop_smoothQuantizeByWidth.vfl, by Andrew Louda
-// Modified: 2024-05-29 - Added fallback for running in contexts where the class parameter doesn't already exist (like volume wrangles)
+// Modified: 2024-10-27 - Updated to new paramter syntax
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
-#define fallbackAttrib f@`chs('target_attribute')` // [[default=mask,preset=attribSelectFloat]]
-#if `ch('class')` // [[parm='class',hidden=1]]
+#define fallbackAttrib f@`chs('target_attribute')` // [[default=mask, preset=attribSelectFloat]]
+#if `ch('class')` // [[parm='class', is_hidden=1]]
 float value = getattrib(0,chs('class'),chs('target_attribute'),@elemnum,0); 
 #else
 float value = fallbackAttrib;
@@ -22,8 +22,8 @@ float width = (1-chf('width'))/2; // [[ parm=width, default=0.5]]
 remainder = fit(remainder, 0+width, 1-width,0,1);
 
 if( chi('enable_ramp') ) remainder = chramp('ramp_steps', remainder);
-// [[ parm=enable_ramp, type=toggle ]]
-// folder[[name=rampconfig,label='Step Ramp',type=collapsible,tags={'sidefx::header_toggle':'enable_ramp'} ]]
+// [[ parm=enable_ramp, is_toggle ]]
+// folder[[name=rampconfig,label='Step Ramp', folder_type=collapsible,tags={'sidefx::header_toggle':'enable_ramp'} ]]
 // [[ parm='ramp_steps', folder=rampconfig, disablewhen='{ enable_ramp != 1 }' ]]
 
 value = valfloor+remainder/stepnum;

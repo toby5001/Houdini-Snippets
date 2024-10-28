@@ -1,6 +1,6 @@
 // Inspired by the post-processing system that comes with the maxon noise system. This allows for per-shading-point variation and use outside of maxon noise.
 // adl_sop_mxPost.vfl, by Andrew Louda
-// Modified: 2024-07-21 - Added support for phase parameter and functionality
+// Modified: 2024-10-27 - Updated to new paramter syntax
 // Copyright 2022 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -72,42 +72,42 @@ float mx_Contrast(float colorcomp, contrast){
     return colorout;
 }
 
-string target_attibute = chs('target_attribute'); // [[default=targetattribute,preset=attribSelectFloat]]
+string target_attibute = chs('target_attribute'); // [[default=targetattribute, preset=attribSelectFloat]]
 
-float cycles = chf('cycles');                                   // [[parm='cycles', default=0, min=0, max=10, hjoin=1, disablewhen='{ cycles_mode == 1 }' ]]
-int cycles_mode = chi('cycles_mode');                           // [[parm='cycles_mode',label_hidden=1,menu_items=('Constant','Attribute') ]]
-string cycles_attribute = chs('cycles_attribute');              // [[parm='cycles_attribute', default='cycles', preset=attribSelect,hidewhen='{ cycles_mode == 0 }' ]]
+float cycles = chf('cycles');                                   // [[parm='cycles', default=0, min=0, max=10, join_with_next=1, disable_when='{ cycles_mode == 1 }' ]]
+int cycles_mode = chi('cycles_mode');                           // [[parm='cycles_mode', is_label_hidden=1, menu_items=('Constant','Attribute') ]]
+string cycles_attribute = chs('cycles_attribute');              // [[parm='cycles_attribute', default='cycles', preset=attribSelect, hide_when='{ cycles_mode == 0 }' ]]
 if(cycles_mode==1) cycles = getattrib(0,chs('class'),cycles_attribute,@elemnum,0);
 
-float cycles_phase = chf('cycles_phase');                       // [[parm='cycles_phase', default=0, min=-1, max=1, hjoin=1, disablewhen='{ cycles_phase_mode == 1 }' ]]
-int cycles_phase_mode = chi('cycles_phase_mode');               // [[parm='cycles_phase_mode',label_hidden=1,menu_items=('Constant','Attribute') ]]
-string cycles_phase_attribute = chs('cycles_phase_attribute');  // [[parm='cycles_phase_attribute', default='cycles_phase', preset=attribSelect,hidewhen='{ cycles_phase_mode == 0 }' ]]
+float cycles_phase = chf('cycles_phase');                       // [[parm='cycles_phase', default=0, min=-1, max=1, join_with_next=1, disable_when='{ cycles_phase_mode == 1 }' ]]
+int cycles_phase_mode = chi('cycles_phase_mode');               // [[parm='cycles_phase_mode', is_label_hidden=1, menu_items=('Constant','Attribute') ]]
+string cycles_phase_attribute = chs('cycles_phase_attribute');  // [[parm='cycles_phase_attribute', default='cycles_phase', preset=attribSelect, hide_when='{ cycles_phase_mode == 0 }' ]]
 if(cycles_phase_mode==1) cycles_phase = getattrib(0,chs('class'),cycles_phase_attribute,@elemnum,0);
 
-int smoothcycles = chi('smooth_cycles');                        // [[parm='smooth_cycles',type="toggle",default=1]]
+int smoothcycles = chi('smooth_cycles');                        // [[parm='smooth_cycles',is_toggle,default=1]]
 
-float lowclip = chf('low_clip');                                // [[parm='low_clip', default=0, min=0, max=1, minlock=1, maxlock=1, hjoin=1, disablewhen='{ lowclip_mode == 1 }' ]]
-int lowclip_mode = chi('lowclip_mode');                         // [[parm='lowclip_mode',label_hidden=1,menu_items=('Constant','Attribute') ]]
-string lowclip_attribute = chs('low_clip_attribute');           // [[parm='low_clip_attribute', default='lowclip', preset=attribSelect,hidewhen='{ lowclip_mode == 0 }' ]]
+float lowclip = chf('low_clip');                                // [[parm='low_clip', default=0, min=0, max=1, max_is_strict=1, max_is_strict=1, join_with_next=1, disable_when='{ lowclip_mode == 1 }' ]]
+int lowclip_mode = chi('lowclip_mode');                         // [[parm='lowclip_mode', is_label_hidden=1, menu_items=('Constant','Attribute') ]]
+string lowclip_attribute = chs('low_clip_attribute');           // [[parm='low_clip_attribute', default='lowclip', preset=attribSelect, hide_when='{ lowclip_mode == 0 }' ]]
 if(lowclip_mode==1) lowclip = getattrib(0,chs('class'),lowclip_attribute,@elemnum,0);
 
-float highclip = chf('high_clip');                              // [[parm='high_clip', default=1, min=0, max=1, minlock=1, maxlock=1, hjoin=1, disablewhen='{ highclip_mode == 1 }' ]]
-int highclip_mode = chi('highclip_mode');                       // [[parm='highclip_mode',label_hidden=1,menu_items=('Constant','Attribute') ]]
-string highclip_attribute = chs('high_clip_attribute');         // [[parm='high_clip_attribute', default='highclip', preset=attribSelect,hidewhen='{ highclip_mode == 0 }' ]]
+float highclip = chf('high_clip');                              // [[parm='high_clip', default=1, min=0, max=1, max_is_strict=1, max_is_strict=1, join_with_next=1, disable_when='{ highclip_mode == 1 }' ]]
+int highclip_mode = chi('highclip_mode');                       // [[parm='highclip_mode', is_label_hidden=1, menu_items=('Constant','Attribute') ]]
+string highclip_attribute = chs('high_clip_attribute');         // [[parm='high_clip_attribute', default='highclip', preset=attribSelect, hide_when='{ highclip_mode == 0 }' ]]
 if(highclip_mode==1) highclip = getattrib(0,chs('class'),highclip_attribute,@elemnum,0);
 
-float brightness = chf('brightness');                           // [[parm='brightness', default=0, min=-1, max=1, minlock=1, maxlock=1, hjoin=1, disablewhen='{ brightness_mode == 1 }' ]]
-int brightness_mode = chi('brightness_mode');                   // [[parm='brightness_mode',label_hidden=1,menu_items=('Constant','Attribute') ]]
-string brightness_attribute = chs('brightness_attribute');      // [[parm='brightness_attribute', default='brightness', preset=attribSelect,hidewhen='{ brightness_mode == 0 }' ]]
+float brightness = chf('brightness');                           // [[parm='brightness', default=0, min=-1, max=1, max_is_strict=1, max_is_strict=1, join_with_next=1, disable_when='{ brightness_mode == 1 }' ]]
+int brightness_mode = chi('brightness_mode');                   // [[parm='brightness_mode', is_label_hidden=1, menu_items=('Constant','Attribute') ]]
+string brightness_attribute = chs('brightness_attribute');      // [[parm='brightness_attribute', default='brightness', preset=attribSelect, hide_when='{ brightness_mode == 0 }' ]]
 if(brightness_mode==1) brightness = getattrib(0,chs('class'),brightness_attribute,@elemnum,0);
 
-float contrast = chf('contrast');                               // [[parm='contrast', default=0, min=-1, max=1, minlock=1, maxlock=1, hjoin=1, disablewhen='{ contrast_mode == 1 }' ]]
-int contrast_mode = chi('contrast_mode');                       // [[parm='contrast_mode',label_hidden=1,menu_items=('Constant','Attribute') ]]
-string contrast_attribute = chs('contrast_attribute');          // [[parm='contrast_attribute', default='contrast', preset=attribSelect,hidewhen='{ contrast_mode == 0 }' ]]
+float contrast = chf('contrast');                               // [[parm='contrast', default=0, min=-1, max=1, max_is_strict=1, max_is_strict=1, join_with_next=1, disable_when='{ contrast_mode == 1 }' ]]
+int contrast_mode = chi('contrast_mode');                       // [[parm='contrast_mode', is_label_hidden=1, menu_items=('Constant','Attribute') ]]
+string contrast_attribute = chs('contrast_attribute');          // [[parm='contrast_attribute', default='contrast', preset=attribSelect, hide_when='{ contrast_mode == 0 }' ]]
 if(contrast_mode==1) contrast = getattrib(0,chs('class'),contrast_attribute,@elemnum,0);
 
 #define fallbackAttrib f@`chs('target_attribute')`
-#if `ch('class')` // [[parm='class',hidden=1]]
+#if `ch('class')` // [[parm='class',is_hidden=1]]
 float value = getattrib(0,chs('class'),target_attibute,@elemnum,0);
 #else
 float value = fallbackAttrib;

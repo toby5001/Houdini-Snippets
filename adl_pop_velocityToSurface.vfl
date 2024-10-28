@@ -1,13 +1,122 @@
 // This constrains incoming velocity to being relative to a target surface, along with attracting the particles to the nearest surface.
 // adl_pop_velocityToSurface.vfl, by Andrew Louda
-// Modified: 2024-10-24 - Added additional functionality for handling animated surfaces and refactored interface
+// Modified: 2024-10-26 - Completely redid parameter interface
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
-// This expects the second input for this wrangle to be the target geometry you want to keep the particles constrained to
+// This expects the second input for this wrangle to be the target surface you want to keep the particles constrained to
 // For the velocity functionalities to work, there needs to be a vector "v" attribute present.
 // The snippet should either work in a POP wrangle or a geometry wrangle set to Points
 // For added detail and interesting behavior combine this with a popgrains and a static collider
+
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
+// BEGIN PARAMETER CONFIGURATION
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// -----------------------------------------------------------------------------
+// Header
+// -----------------------------------------------------------------------------
+// folder[[name=header, folder_type=Borderless, independent,]]
+#if 0
+ch('sep1')
+    // [[template=SeparatorParmTemplate,args=('sep1',), folder=header]]
+ch('label1')
+    /* [[template=LabelParmTemplate,args=('label1',''), folder=header, kwargs={'is_label_hidden':1, 'column_labels':(
+"""Important: The snippet expects the first input to be the particles you want to operate on, and for the second input to be the target surface you want to keep the particles constrained to.
+For the velocity functionalities to work, there needs to be a vector "v" attribute present.""",) } ]] */
+ch('sep2')
+    // [[template=SeparatorParmTemplate,args=('sep2',), folder=header]]
+#endif
+
+int enable_falloff = chi('enable_falloff');
+    // [[ is_toggle, folder=header]]
+// folder[[name=main_parameters, folder_type=Tabs, label=Main, ends_tab_group=0, independent,]]
+// folder[[name=falloff_control, folder_type=Tabs, independent, tab_disable_when='{ enable_falloff != 1 }']]
+
+
+// -----------------------------------------------------------------------------
+// Falloff
+// -----------------------------------------------------------------------------
+// folder[[name=distance_falloff, folder_type=Collapsible, label="Distance-Based Falloff", parent_folder=falloff_control, stags={'sidefx::header_toggle':'enable_falloff'}, disable_when='{ enable_falloff != 1 }']]
+float distance_min = chf('distance_min');
+    // [[ default=0.1, folder=falloff_control]]
+float distance_max = chf('distance_max');
+    // [[ default=0.5, folder=falloff_control]]
+#define ramp_falloff(f) (chramp('ramp_falloff',f))
+    // [[ folder=falloff_control]]
+
+
+// -----------------------------------------------------------------------------
+// Surface Velocity Constraint
+// -----------------------------------------------------------------------------
+// folder[[name=velocity_surface_constraint, folder_type=Borderless, parent_folder=main_parameters]]
+int constraint_use_falloff = chi('constraint_use_falloff');
+    // [[  is_toggle, label='Use Falloff', default=1, folder=velocity_surface_constraint, disable_when='{ enable_falloff != 1 }']]
+float v_constraint_blend = chf('v_constraint_blend');
+    // [[ label='Velocity Blend', folder=velocity_surface_constraint, default=1]]
+
+
+#if 0
+ch('sep3')
+    // [[template=SeparatorParmTemplate,args=('sep3',), folder=main_parameters]]
+#endif
+// -----------------------------------------------------------------------------
+// Surface Attraction
+// -----------------------------------------------------------------------------
+// folder[[name=surface_attraction, folder_type=Borderless, parent_folder=main_parameters]]
+int attract_use_falloff = chi('attract_use_falloff');
+    // [[ is_toggle, label='Use Falloff', default=1, join_with_next, folder=surface_attraction, disable_when='{ enable_falloff != 1 }']]
+int invert_attract_falloff = chi('invert_attract_falloff');
+    // [[ is_toggle, label='Invert Falloff', default=1, folder=surface_attraction, disable_when='{ enable_falloff != 1 }{ attract_use_falloff != 1 }']]
+float surface_attract_scale = chf('surface_attract_scale');
+    // [[ default=1, max=10, folder=surface_attraction]]
+int attract_type = chi('attract_type');
+    // [[ default=0, folder=surface_attraction, menu_items=('Update Force', 'Simple Add to Velocity')]]
+
+// folder[[ name=updateforce, parent_folder=surface_attraction, folder_type=Borderless, hide_when='{ attract_type != 1 }']]
+int ignore_mass = chi('ignore_mass');
+    // [[ is_toggle, default=1, folder=updateforce]]
+int as_wind = chi('as_wind');
+    // [[ is_toggle, folder=updateforce]]
+float force_scale = chf('force_scale');
+    // [[ default=1, max=10, folder=updateforce, hide_when='{ as_wind != 0 }']]
+float air_resist = chf('air_resist');
+    // [[ default=1, max=10, folder=updateforce, hide_when='{ as_wind != 1 }']]
+
+
+#if 0
+ch('sep4')
+    // [[template=SeparatorParmTemplate,args=('sep4',), folder=main_parameters]]
+#endif
+// -----------------------------------------------------------------------------
+// Velocity Functionality
+// -----------------------------------------------------------------------------
+
+// folder[[name=velocity_functionality, folder_type=Borderless, label='Surface Velocity Functionality', parent_folder=main_parameters, stags={'sidefx::header_toggle':'use_surface_velocity'}, disable_when='{ use_surface_velocity != 1 }' ]]
+int use_surface_velocity = chi('use_surface_velocity');
+    // [[ is_toggle, folder=main_parameters ]]
+float surface_velocity_contribution = chf('surface_velocity_contribution');
+    // [[ default=1, label='Velocity Contribution', folder=velocity_functionality]]
+
+// folder[[name=limit_speed_by_surface, folder_type=Borderless, parent_folder=velocity_functionality, tags={'sidefx::header_toggle':'enable_speed_limit'}, disable_when='{ enable_speed_limit == 0 }{ use_surface_velocity == 0 }']]
+int enable_speed_limit = chi('enable_speed_limit');
+    // [[ is_toggle, default=1, label='Limit Speed by Surface Velocity', folder=velocity_functionality, hjoin=1]]
+float max_speed_minimum = chf('max_speed_minimum');
+    // [[ min=0, max=1, default=0.5, folder=velocity_functionality, disable_when='{ enable_speed_limit != 1 }', help='This defines the minimum value allowed for the speedmax attribute.']]
+int max_speed_method = chi('max_speed_method');
+    /* [[ menu_items=('Add Minimum to Surface Speed','Scaled Surface Speed, at least Minimum' ), folder=velocity_functionality, disable_when='{ enable_speed_limit != 1 }', help=
+"""There are two combination methods to define the speedmax attribute:
+Add Minimum to Surface Speed: Adds the nearest surface's speed with the Max Speed Minimum.
+Scaled Surface Speed, at least Minimum: Choses the maximum value from either the current surface speed scaled by a certain amount, or the Max Speed Minimum.
+In both cases, it is ensure that at the very least, the maximum speed is whatever the Max Speed Minimum is set to."""]] */
+float surface_multiplier = chf('surface_multiplier');
+    // [[ default=5, min=1, max=10, folder=velocity_functionality, disable_when='{ enable_speed_limit != 1 }', hide_when='{ max_speed_method != 1 }' ]]
+
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
+// END PARAMETER CONFIGURATION
+// ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 // Get nearest surface primitive and coordinates alongside it's corresponding distance
 int surface_prim; vector surface_uvw;
@@ -16,91 +125,67 @@ float dist = xyzdist(1, v@P, surface_prim, surface_uvw);
 vector nearN = primuv(1, 'N', surface_prim, surface_uvw);
 vector nearP = primuv(1, 'P', surface_prim, surface_uvw);
 
-// folder[[name=main_parameters, label=Main, type=tabs,independent=1, ends_tab_group=1]]
-// folder[[name=details, type=tabs, ends_tab_group=1, independent=1]]
-
-// folder[[name=distance_falloff, independent=1, parent_folder=main_parameters, label="Distance-Based Falloff", type=collapsible, tags={'sidefx::header_toggle':'enable_falloff'}, disablewhen='{ enable_falloff != 1 }']]
 float falloff = 1.;
-int enable_falloff = chi('enable_falloff'); // [[type=toggle,folder=main_parameters]]
 if(enable_falloff){
-    falloff = fit(dist,chf('distance_min'),chf('distance_max'),1,0); // [[parm=distance_min,default=0.1,folder=distance_falloff]] [[parm=distance_max,default=0.5,folder=distance_falloff]]
-    falloff = chramp('remap_falloff',falloff); // [[folder=distance_falloff]]
+    falloff = fit(dist, distance_min, distance_max,1,0);
+    falloff = ramp_falloff(falloff);
 }
 // export the falloff attribute for debugging and potential use in other parts of the network
 f@surface_falloff = falloff;
 
 // Restrict the input velocity to be tangent to the surface normal, blending with the original by a user-defined value.
-// folder[[name=velocity_surface_constraint,type=simple,parent_folder=main_parameters,independent=1]]
-float constraint_falloff = chi('constraint_use_falloff') && enable_falloff ? falloff : 1.; // [[folder=velocity_surface_constraint,label='Use Falloff',type=toggle,default=1,disablewhen='{ enable_falloff != 1 }']]
-v@v = v@v - lerp(0,(nearN*dot(v@v,nearN)), constraint_falloff*chf('v_constraint_blend') ); // [[label='Velocity Blend',folder=velocity_surface_constraint,default=1]]
+float constraint_falloff = constraint_use_falloff && enable_falloff ? falloff : 1.;
+v@v = v@v - lerp(0,(nearN*dot(v@v,nearN)), constraint_falloff * v_constraint_blend );
 
-
-// folder[[name=surface_attraction, type=simple, parent_folder=main_parameters]]
+// This functions as a form of local gravity to push particles in the direction of the nearest surface.
 float attract_falloff = 1.;
-if(chi('attract_use_falloff') && enable_falloff){ // [[folder=surface_attraction,label='Use Falloff',type=toggle,default=1, hjoin=1, disablewhen='{ enable_falloff != 1 }']]
-    attract_falloff = chi('invert_attract_falloff') ? 1-falloff : falloff; // [[folder=surface_attraction,label='Invert Falloff',type=toggle,default=1, disablewhen='{ enable_falloff != 1 }{ attract_use_falloff != 1 }']]
+if(attract_use_falloff && enable_falloff){
+    attract_falloff = invert_attract_falloff ? 1-falloff : falloff;
 }
-vector attract = attract_falloff * dist * normalize(nearP - v@P) * chf('surface_attract_scale'); // [[folder=surface_attraction, max=10, default=1]]
-int attract_type = chi('attract_type'); // [[folder=surface_attraction, type=menu, default=1,menu_items=('Simple Add to Velocity', 'Update Force')]]
-if(attract_type==0){
-// Simply adds attract to the current velocity
-    // This functions as a form of local gravity to push particles in the direction of the nearest surface.
-    v@v += attract ;
-}
-// folder[[ name=updateforce, parent_folder=surface_attraction, type=borderless, hidewhen='{ attract_type != 1 }']]
-else if( attract_type==1 ){
+vector attract = attract_falloff * dist * normalize(nearP - v@P) * surface_attract_scale;
+if( attract_type==0 ){
     // Methodology adapted from the popadvectbyvolumes popadvect vop advection methods
-    float mass = chi('ignore_mass') ? 1. : point(0,'mass',@elemnum); // [[folder=updateforce,type=toggle,default=1,]]
+    float mass = ignore_mass ? 1. : point(0,'mass',@elemnum);
 
-    int as_wind = chi('as_wind'); // [[folder=updateforce, type=toggle]]
     if( as_wind == 0){
-        float forcescale = chf('force_scale'); // [[folder=updateforce, default=1, max=10, hidewhen='{ as_wind != 0 }']]
-        setpointattrib(0, 'force', @elemnum, attract * forcescale * mass , 'add');
+        setpointattrib(0, 'force', @elemnum, attract * force_scale * mass , 'add');
     }
     else{
-        float airresist = chf('air_resist'); // [[folder=updateforce, default=1, max=10, hidewhen='{ as_wind != 1 }']]
-        airresist *= mass;
+        air_resist *= mass;
         vector incoming_wind = point(0,'targetv',@elemnum);
         float incoming_airresist = point(0,'airresist',@elemnum);
-        float airresist_combined = airresist + incoming_airresist;
-        setpointattrib(0, 'targetv', @elemnum, ((attract * airresist) + (incoming_wind * incoming_airresist)) / airresist_combined, 'set');
+        float airresist_combined = air_resist + incoming_airresist;
+        setpointattrib(0, 'targetv', @elemnum, ((attract * air_resist) + (incoming_wind * incoming_airresist)) / airresist_combined, 'set');
         setpointattrib(0, 'airresist', @elemnum, airresist_combined, 'set');
     }
 }
+else if(attract_type==1){
+    // Simply adds attract to the current velocity
+    v@v += attract ;
+}
 
-
-if(chi('enable_velocity_based')){ // [[type=toggle,folder=details]]
-// folder[[name=velocity_functionality, parent_folder=details, label='Surface Velocity Functionality', type=collapsible, tags={'sidefx::header_toggle':'enable_velocity_based'}, disablewhen='{ enable_velocity_based != 1 }' ]]
-
+if(use_surface_velocity){
     // Get relevant attributes for velocity and speed, saving the velocity to be read on the next frame to calculate acceleration
     vector nearv = primuv(1, 'v', surface_prim, surface_uvw);
     vector nearv_accel = nearv - v@__nearv_last;
     v@__nearv_last = nearv;
 
     // Add the nearest surface velocity to the current velocity, taking in to account falloff
-    v@v += falloff * nearv_accel * chf('surface_velocity_contribution'); // [[label='Velocity Contribution',folder=velocity_functionality, default=1]]
+    v@v += falloff * nearv_accel * surface_velocity_contribution;
 
     // Limit the speed by the speed of the input surface (requires speed attribute)
     /*  For the right situation, this is an incredibly powerful parameter, but the max speed minimum must be
         properly set, or else all movement will be limited when the surface stops moving */
-    if(chi('enable_speed_limit')){ // [[label='Limit Speed by Surface Velocity', type=toggle,default=1,folder=velocity_functionality]]
-        // folder[[parent_folder=velocity_functionality, name=limit_speed_by_surface, type=borderless, tags={'sidefx::header_toggle':'enable_speed_limit'}, disablewhen='{ enable_speed_limit == 0 }{ enable_velocity_based == 0 }']]
-        float speedfloor = chf('max_speed_minimum'); // [[min=0,max=1,default=0.5,folder=limit_speed_by_surface,help='This defines the minimum value allowed for the speedmax attribute.']]
-        int speed_method = chi('max_speed_method'); /* [[folder=limit_speed_by_surface,type=menu,menu_items=('Add Minimum to Surface Speed','Scaled Surface Speed, at least Minimum' ), help=
-"""There are two combination methods to define the speedmax attribute:
-    Add Minimum to Surface Speed: Adds the nearest surface's speed with the Max Speed Minimum.
-    Scaled Surface Speed, at least Minimum: Choses the maximum value from either the current surface speed scaled by a certain amount, or the Max Speed Minimum.
-    In both cases, it is ensure that at the very least, the maximum speed is whatever the Max Speed Minimum is set to."""]] */
-
+    if(enable_speed_limit){
         // float nearspeed = length(nearv);
         float nearspeed = primuv(1, 'speed', surface_prim, surface_uvw);
         float speedmax;
-        if(speed_method==0){
-            speedmax = speedfloor + nearspeed;
+        if(max_speed_method==0){
+            speedmax = max_speed_minimum + nearspeed;
         }
-        else if(speed_method==1){
+        else if(max_speed_method==1){
             // limit the speed to a scaled amount of the current surface speed, but maintaining a minimum speed (defined by max speed floor)
-            speedmax = max( speedfloor, nearspeed*chf('surface_multiplier')); // [[min=1,max=10,default=5,folder=limit_speed_by_surface,disablewhen='{ max_speed_method != 1 }']]
+            speedmax = max( max_speed_minimum, nearspeed * surface_multiplier);
         }
         setpointattrib(0,'speedmax', @elemnum, speedmax, 'set');
     }

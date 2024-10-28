@@ -309,10 +309,10 @@ float hmf_f(vector coords; float foctaves, lacunarity, gain, mtime, seed) {
 vector pos = v@P;
 
 float stepval = chf("stepval");
-float uscale = chf("uscale");
-float octaves = chf("octaves");
-float seed = chf("seed");
-float manual_time = chf("time");
+float uscale = chf("uscale"); // [[max=10]]
+float octaves = chf("octaves"); // [[max=10]]
+float seed = chf("seed"); // [[max=123]]
+float manual_time = chf("time"); // [[max=10]]
 
 // Mainly for debugging, allows for distinct hash values to be easily compared
 if( stepval > 0) pos = floor(pos/stepval)*stepval;

@@ -1,6 +1,6 @@
 // Inspired by the post-processing system that comes with the maxon noise system. This allows for per-shading-point variation and use outside of maxon noise.
 // adl_cop_mxPost.cl, by Andrew Louda
-// Modified: 2024-07-21 - Added ringid output, useful for varying outputs downstream
+// Modified: 2024-10-27 - Updated to new paramter syntax
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -76,37 +76,37 @@ float mx_Contrast(float colorcomp, float contrast){
 {
     #bind layer cycles? float
     #bind parm cycles_ float val=0 
-    // [[parm='cycles_', default=0, min=0, max=10, disablewhen='{ hasinput(1) == 1 }']]
+    // [[parm='cycles_', default=0, min=0, max=10, disable_when='{ hasinput(1) == 1 }']]
     float cycles = @cycles.bound ? @cycles : @cycles_;
     
     #bind layer cycles_phase? float
     #bind parm cycles_phase_ float val=0 
-    // [[parm='cycles_phase_', default=0, min=-1, max=1, disablewhen='{ hasinput(2) == 1 }']]
+    // [[parm='cycles_phase_', default=0, min=-1, max=1, disable_when='{ hasinput(2) == 1 }']]
     float cycles_phase = @cycles_phase.bound ? @cycles_phase : @cycles_phase_;
 
     #bind layer smooth_cycles? int
     #bind parm smooth_cycles_ int val=1
-    // [[parm=smooth_cycles_, default=1, type=toggle, disablewhen='{ hasinput(3) == 1 }']]
+    // [[parm=smooth_cycles_, default=1, is_toggle, disable_when='{ hasinput(3) == 1 }']]
     int smooth_cycles = @smooth_cycles.bound ? @smooth_cycles : @smooth_cycles_;
 
     #bind layer lowclip? float
     #bind parm low_clip_ float val=0
-    // [[parm='low_clip_', default=0, min=0, max=1, minlock=1, maxlock=1, disablewhen='{ hasinput(4) == 1 }']]
+    // [[parm='low_clip_', default=0, min=0, max=1, min_is_strict=1, max_is_strict=1, disable_when='{ hasinput(4) == 1 }']]
     float lowclip = @lowclip.bound ? @lowclip : @low_clip_;
 
     #bind layer highclip? float
     #bind parm high_clip_ float val=1
-    // [[parm='high_clip_', default=1, min=0, max=1, minlock=1, maxlock=1, disablewhen='{ hasinput(5) == 1 }']]
+    // [[parm='high_clip_', default=1, min=0, max=1, min_is_strict=1, max_is_strict=1, disable_when='{ hasinput(5) == 1 }']]
     float highclip = @highclip.bound ? @highclip : @high_clip_;
 
     #bind layer brightness? float
     #bind parm brightness_ float val=0
-    // [[parm='brightness_', default=0, min=-1, max=1, minlock=1, maxlock=1, disablewhen='{ hasinput(7) == 1 }']]
+    // [[parm='brightness_', default=0, min=-1, max=1, min_is_strict=1, max_is_strict=1, disable_when='{ hasinput(7) == 1 }']]
     float brightness = @brightness.bound ? @brightness : @brightness_;
 
     #bind layer contrast? float
     #bind parm contrast_ float val=0
-    // [[parm='contrast_', default=0, min=-1, max=1, minlock=1, maxlock=1, disablewhen='{ hasinput(7) == 1 }']]
+    // [[parm='contrast_', default=0, min=-1, max=1, min_is_strict=1, max_is_strict=1, disable_when='{ hasinput(7) == 1 }']]
     float contrast = @contrast.bound ? @contrast : @contrast_;
     
     #if @src.channels == 1

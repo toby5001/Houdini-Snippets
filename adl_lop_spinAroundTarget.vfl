@@ -1,14 +1,16 @@
 // Rotates a camera around a given target, either a primitive or a definied location.
 // adl_lop_spinAroundTarget.vfl, by Andrew Louda
-// Modified: 2024-10-07
+// Modified: 2024-10-27 - Updated to new paramter syntax
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
-int spinMethod = chi("spin_method");  // [[ hjoin=1, menu_pairs={'primTarget':'Primitive Target','manual':'Manual'} ]]
-string spinPrimPath = chs("spin_primitive");  // [[ preset='lopPrimSelect', disablewhen="{ spin_method == 1 }" ]]
-// folder[[name=Manual,type=borderless,hidewhen="{ spin_method != 1 }"]]
-vector spinCenter = chv("spin_center"); // [[folder=Manual]]
-vector spinRotation = chv("spin_rotation"); // [[folder=Manual]]
+int spinMethod = chi("spin_method");  // [[ join_with_next=1, menu_pairs={'primTarget':'Primitive Target','manual':'Manual'} ]]
+string spinPrimPath = chs("spin_primitive");  // [[ preset='lopPrimSelect', disable_when="{ spin_method == 1 }" ]]
+// folder[[name=Manual, folder_type=borderless, hide_when="{ spin_method != 1 }"]]
+vector spinCenter = chv("spin_center"); // [[hide_when="{ spin_method != 1 }"]]
+int rOrd = chi('rOrd'); // [[label='Rotation Order', menu_pairs={'xyz':'Rx Ry Rz','xzy':'Rx Rz Ry','yxz':'Ry Rx Rz','yzx':'Ry Rz Rx','zxy':'Rz Rx Ry','zyx':'Rz Ry Rx'}]]
+vector spinRotation = chv("spin_rotation"); // [[hide_when="{ spin_method != 1 }"]]
+vector additionalRotation = chv('additional_rotation'); // [[hide_when="{ spin_method != 0 }"]]
 
 // Get world and local transform info of the operating primitive (presumably a camera)
 matrix camXform = usd_worldtransform(0, @primpath);
@@ -24,11 +26,12 @@ matrix targetXform;
 if( spinMethod == 0){
     // Get world and local transform info for spin prim
     targetXform = usd_worldtransform(0, spinPrimPath);
+    prerotate(targetXform,radians(additionalRotation),rOrd);
 }
 if( spinMethod == 1){
     // Construct transform matrix using manual coordinates.
     // Assumes standard TRS and XYZ order
-    targetXform = maketransform(0,0,spinCenter,spinRotation,1);
+    targetXform = maketransform(0,rOrd,spinCenter,spinRotation,1);
 }
 
 // Translate camera to center relative to the target xform, before applying it's matrix
