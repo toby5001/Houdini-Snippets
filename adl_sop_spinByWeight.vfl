@@ -11,7 +11,7 @@
 */
 
 
-int weight_method = chi('weight_method'); // [[menu_items=('rand','weight'), menu_labels=('Random Per Element','Weight Attribute') ]]
+int weight_method = chi('weight_method'); // [[menu_items=('rand','weight','const'), menu_labels=('Random Per Element','Weight Attribute','Constant') ]]
 float spin_weight = 1;
 if(weight_method == 0){
     // folder[[name=rand_parms, folder_type='Collapsible', label='Configure Random', hide_when="{ weight_method != 0 }"]]
