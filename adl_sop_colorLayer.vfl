@@ -1,0 +1,227 @@
+// Allows layering of multiple attributes through standard combination methods. Supports mixed types of float, vector2, vector, and vector4.
+// adl_sop_colorLayer.vfl, by Andrew Louda
+// Modified: 2024-11-13 - Initial asset
+// Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+int base_attribute_method = chi('base_attribute_to_layer');
+    // [[menu_items=('Cd + Alpha (optional)','Custom Attribute')]]
+string custom_attribute = chs('custom_attribute');
+    // [[ preset=attribSelect, hide_when='{ base_attribute_to_layer == 0 }']]
+
+// folder[[name=color_layers,folder_type=MultiparmBlock]]
+chi('layer_enabled'); // [[is_toggle, is_label_hidden, folder=color_layers, default=1, is_multiparm, join_with_next]]
+chs('new_color_attribute'); // [[is_multiparm, preset=attribSelect,folder=color_layers, disable_when='{ layer_enabled# == 0 }']]
+chf('blend_amount'); // [[is_multiparm, folder=color_layers, default=1, disable_when='{ layer_enabled# == 0 }']]
+chs('blend_mode'); /* [[is_multiparm, folder=color_layers, disable_when='{ layer_enabled# == 0 }', menu_items=('Normal', 'Average', 'Add', 'Subtract', 'Multiply', 'Divide',
+    'Difference', 'Lighten', 'Darken', 'Screen', 'Hard Light', 'Soft Light', 'Dodge', 'Burn',
+    'Linear Dodge', 'Linear Burn', 'Color Dodge', 'Color Burn', 'Color', 'Hue', 'Saturation', 'Value',
+    'Spotlight', 'Spotlight Blend', 'Pin Light', 'Hard Mix', 'Exclusion', 'Overlay') ]] */
+
+int clamp_output = chi('clamp_output'); // [[is_toggle]]
+
+vector4 composite_layer(string BlendMode; vector BottomRGB, TopRGB; float BottomA, TopA){
+    // Put in bottom layer's contribution
+    vector Out  = BottomRGB   * (1.0 - TopA);
+    float Alpha = BottomA * (1.0 - TopA);
+
+        // Blend mode code courtesy of Changsoo Eun
+    vector blended = 0.0;
+    if(BlendMode == "Normal")
+        blended = TopRGB;
+    else if(BlendMode == "Average")
+        blended = (BottomRGB+TopRGB)/2.0;
+    else if(BlendMode == "Darken")
+        blended = min(BottomRGB, TopRGB);
+    else if(BlendMode == "Multiply")
+        blended = (BottomRGB * TopRGB);
+        else if (BlendMode == "Color Burn"){
+            if (TopRGB == 0.0)
+                blended = TopRGB;
+            else 
+                blended = max(1.0 - (1.0 - BottomRGB) / TopRGB, 0.0);
+        }
+    else if (BlendMode == "Linear Burn")
+        blended = max((BottomRGB + TopRGB - 1.0), {0,0,0});
+    else if (BlendMode == "Lighten")
+        blended = max(BottomRGB, TopRGB);
+    else if (BlendMode == "Screen")
+        blended = TopRGB + BottomRGB - TopRGB * BottomRGB;
+
+    else if (BlendMode == "Color Dodge"){
+        if (TopRGB == {1.,1.,1.})
+            blended = {1.,1.,1.};
+        else 
+            blended = min(BottomRGB / (1.0 - TopRGB), {1.,1.,1.});          
+    }
+    else if (BlendMode == "Linear Dodge")           
+        blended = min((BottomRGB + TopRGB), {1.,1.,1.});
+    else if (BlendMode == "Spotlight")              
+        blended = min(2.0 * TopRGB * BottomRGB, 1.0);
+    else if (BlendMode == "Spotlight Blend")                
+        blended = min(TopRGB * BottomRGB + BottomRGB, 1.0);
+    else if (BlendMode == "Overlay"){
+        float BottomRGBl = luminance (BottomRGB);               
+        if (BottomRGBl <= 0.5)
+            blended = (2.0 * BottomRGB * TopRGB);           
+        else
+            blended = (1.0 - 2.0 * (1.0 - TopRGB) * (1.0 - BottomRGB));
+    }
+    else if (BlendMode == "Soft Light"){
+        float TopRGBl = luminance (TopRGB);             
+        if (TopRGBl <= 0.5)
+            blended = BottomRGB * (BottomRGB + 2.0 * TopRGB * (1.0 - BottomRGB));
+        else 
+            blended = BottomRGB + (2.0 * TopRGB - 1.0) * (sqrt(BottomRGB) - BottomRGB);
+    }               
+    else if (BlendMode == "Hard Light"){
+        float TopRGBl = luminance (TopRGB);             
+        if (TopRGBl <= 0.5)
+            blended = 2.0 * TopRGB * BottomRGB;
+        else 
+            blended =  1.0 - 2.0 * (1.0 - TopRGB) * (1.0 - BottomRGB);                      
+    }       
+    else if (BlendMode == "Pin Light"){
+        float PinLight (float b, a){
+            if ((a > 0.5 && a > b) || (a < 0.5 && a < b))
+                return a;
+            else
+                return b;
+        }
+        blended[0] = PinLight (BottomRGB[0], TopRGB[0]);
+        blended[1] = PinLight (BottomRGB[1], TopRGB[1]);
+        blended[2] = PinLight (BottomRGB[2], TopRGB[2]);                                
+    }               
+    else if (BlendMode == "Hard Mix"){
+        float HardMix (float b, a){
+            if ((a + b) <= 1.0)
+                return 0.0;
+            else
+                return 1.0;
+        }               
+        blended[0] = HardMix (BottomRGB[0], TopRGB[0]);
+        blended[1] = HardMix (BottomRGB[1], TopRGB[1]);
+        blended[2] = HardMix (BottomRGB[2], TopRGB[2]);         
+    }               
+    else if (BlendMode == "Difference"){
+        float Difference (float b, a){
+            return abs(a - b);
+        }               
+        blended[0] = Difference (BottomRGB[0], TopRGB[0]);
+        blended[1] = Difference (BottomRGB[1], TopRGB[1]);
+        blended[2] = Difference (BottomRGB[2], TopRGB[2]);      
+    }
+    else if (BlendMode == "Exclusion"){
+        blended = TopRGB + BottomRGB - 2.0 * TopRGB * BottomRGB;
+    }       
+    else if (BlendMode == "Subtract"){
+        blended = max(BottomRGB - TopRGB, 0.0);
+    }               
+    else if (BlendMode == "Divide"){
+        blended = BottomRGB / TopRGB;
+    }               
+    else if (BlendMode == "Hue"){
+        vector hsvBottomRGB = rgbtohsv(BottomRGB);
+        vector hsvTopRGB = rgbtohsv(TopRGB);            
+        blended = hsvtorgb( hsvTopRGB[0], hsvBottomRGB[1], hsvBottomRGB[2]);    
+    }       
+    else if (BlendMode == "Saturation"){
+        vector hsvBottomRGB = rgbtohsv(BottomRGB);
+        vector hsvTopRGB = rgbtohsv(TopRGB);            
+        blended = hsvtorgb( hsvBottomRGB[0], hsvTopRGB[1], hsvBottomRGB[2]);
+    }                       
+    else if (BlendMode == "Color"){
+        vector hsvBottomRGB = rgbtohsv(BottomRGB);
+        vector hsvTopRGB = rgbtohsv(TopRGB);            
+        blended = hsvtorgb( hsvTopRGB[0], hsvTopRGB[1], hsvBottomRGB[2]);       
+    }               
+    else if (BlendMode == "Value"){
+        vector hsvBottomRGB = rgbtohsv(BottomRGB);
+        vector hsvTopRGB = rgbtohsv(TopRGB);            
+        blended = hsvtorgb( hsvBottomRGB[0], hsvBottomRGB[1], hsvTopRGB[2]);    
+    }       
+    
+    // Put in top layer's contribution
+    Out   += blended * TopA;
+    Alpha += TopA;
+    
+    return set(Out.x, Out.y, Out.z, Alpha);
+}
+
+vector4 attribToRGBA( string targetattrib; int elemnum){
+    int sz = attribsize(0, chs('class'), targetattrib );
+    vector4 rgba = 0.0;
+    if(sz==3){
+        vector rgb = attrib(0, chs('class'), targetattrib, elemnum);
+        rgba = set(rgb[0], rgb[1], rgb[2], 1.0);
+    }
+    else if(sz==1){
+        float r = attrib(0, chs('class'), targetattrib, elemnum);
+        rgba = set(r, r, r, 1.0);
+    }
+    else if(sz==2){
+        vector2 rg = attrib(0, chs('class'), targetattrib, elemnum);
+        rgba = set(rg[0], rg[1], 0., 1.0);
+    }
+    else if(sz==4){
+        rgba = attrib(0, chs('class'), targetattrib, elemnum);
+    }
+    return rgba;
+}
+
+vector4 bottomRGBA = {0,0,0,1};
+if(base_attribute_method == 0){
+    vector bottomRGB = hasattrib(0,chs('class'),'Cd') ? attrib(0,chs('class'),'Cd',@elemnum) : {0.,0.,0.};
+    float bottomA = hasattrib(0,chs('class'),'alpha') ? attrib(0,chs('class'),'alpha',@elemnum) : 1.0;
+    bottomRGBA = set(bottomRGB.x,bottomRGB.y,bottomRGB.z,bottomA); 
+}
+else if(base_attribute_method == 1){
+    bottomRGBA = attribToRGBA(custom_attribute,@elemnum);
+}
+
+i@num_multiparm = chi("color_layers");
+vector4 topRGBA = {0.,0.,0.,1.};
+// Loop over each multiparm component
+for( int i=1; i <= chi("color_layers"); i++ ){
+    if( chi("layer_enabled"+itoa(i)) ){
+        string targetattrib = chs("new_color_attribute"+itoa(i));
+        int sz = attribsize(0, chs('class'), targetattrib );
+        topRGBA = attribToRGBA( targetattrib,@elemnum);
+
+        vector4 newRGBA = composite_layer( chs("blend_mode"+itoa(i)), set(bottomRGBA[0],bottomRGBA[1],bottomRGBA[2]), set(topRGBA[0],topRGBA[1],topRGBA[2]), bottomRGBA[3], topRGBA[3]);
+
+        float blendamt = chf("blend_amount"+itoa(i));
+        bottomRGBA = lerp(bottomRGBA, newRGBA, blendamt);
+        // printf('I %f \n', i);
+        // printf('SIZE %f \n', sz);
+    }
+}
+
+// Clamp, to stay within sanity
+if(clamp_output) bottomRGBA = clamp(bottomRGBA, 0.0, 1.0);
+
+
+if(base_attribute_method == 0){
+    setattrib(0, chs('class'), 'Cd', i@elemnum, i@vtxnum, set(bottomRGBA.x,bottomRGBA.y,bottomRGBA.z), "set");
+}
+
+else if(base_attribute_method == 1){
+#define WRITEATTRIB(outval) setattrib(0,chs('class'),custom_attribute,i@elemnum,i@vtxnum,outval,"set")
+    int sz = attribsize(0, chs('class'), custom_attribute );
+    if( sz == 3){
+        vector outval = set(bottomRGBA.x,bottomRGBA.y,bottomRGBA.z);
+        WRITEATTRIB(outval);
+    }
+    if( sz == 1){
+        float outval = (bottomRGBA.x + bottomRGBA.y + bottomRGBA.z) / 3.;
+        WRITEATTRIB(outval);
+    }
+    if( sz == 2){
+        vector2 outval = (bottomRGBA.x + bottomRGBA.y) / 2.;
+        WRITEATTRIB(outval);
+    }
+    if( sz == 4){
+        WRITEATTRIB(bottomRGBA);
+    }
+    
+}
