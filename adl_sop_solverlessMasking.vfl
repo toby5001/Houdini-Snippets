@@ -6,8 +6,12 @@
 
 // this can either use a id number to randomize offsets, or use an incoming offset weight
 
-string mode = chs('mode'); // [[menu_pairs={'set':'Set','add':'Add','mult':'Multiply','min':'Minimum','max':'Maximum'}]]
-string target_attibute = chs('target_attribute'); // [[default=mask, preset=attribSelectFloat]]
+string output_attribute = chs('output_attribute'); // [[default=mask, preset=attribSelectFloat]]
+
+int progression_mode = chi('progression_mode'); // [[join_with_next, label='Progression', menu_items=('Uniform','Attribute')]]
+float progression = chf("progression"); // [[is_label_hidden, disable_when='{ progression_mode != 0 }']]
+string progression_attribute = chs('progression_attribute'); // [[default=mask, preset=attribSelect, hide_when='{ progression_mode != 1 }' ]]
+if(progression_mode==1) progression = getattrib(0,chs('class'),progression_attribute,@elemnum,0);
 
 float t = chf("t"); // [[default_expression='$T*0.5', help='Moves through offsets as it goes from 0 to 1']]
 
@@ -36,7 +40,7 @@ else if(offset_method == 1){
 }
 
 float mask = offset_weight*offset_spread;
-mask = clamp( -mask+( t*(1+offset_spread)), 0, 1);
+mask = clamp( -mask+( progression*(1+offset_spread)), 0, 1);
 
 int post_method = chi('post_method'); // [[default=1, menu_items=('none','gain','ramp'), menu_labels=('None','Gain','Ramp') ]]
 
@@ -53,4 +57,4 @@ else if(post_method==2){
     mask = chramp("reshape_mask", mask); // [[hide_when="{ post_method != 2 }"]]
 }
 
-setattrib(0,chs('class'),target_attibute,@elemnum,@vtxnum,mask,mode);
+setattrib(0,chs('class'),output_attribute,@elemnum,@vtxnum,mask,'set');
