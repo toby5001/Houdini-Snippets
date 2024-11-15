@@ -8,12 +8,10 @@
 
 string output_attribute = chs('output_attribute'); // [[default=mask, preset=attribSelectFloat]]
 
-int progression_mode = chi('progression_mode'); // [[join_with_next, label='Progression', menu_items=('Uniform','Attribute')]]
+int progression_mode = chi('progression_mode'); // [[join_with_next, label='Progression', help='Moves through offsets as it goes from 0 to 1', menu_items=('Uniform','Attribute')]]
 float progression = chf("progression"); // [[is_label_hidden, disable_when='{ progression_mode != 0 }']]
 string progression_attribute = chs('progression_attribute'); // [[default=mask, preset=attribSelect, hide_when='{ progression_mode != 1 }' ]]
 if(progression_mode==1) progression = getattrib(0,chs('class'),progression_attribute,@elemnum,0);
-
-float t = chf("t"); // [[default_expression='$T*0.5', help='Moves through offsets as it goes from 0 to 1']]
 
 float offset_spread = chf("spread"); // [[default=1, min=0, max=10]]
 
