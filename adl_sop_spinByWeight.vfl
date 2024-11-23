@@ -12,7 +12,7 @@
 
 
 int weight_method = chi('weight_method'); // [[menu_items=('rand','weight','none'), menu_labels=('Random Per Element','Weight Attribute','None') ]]
-float spin_weight = 1;
+vector spin_weight = 1;
 if(weight_method == 0){
     // folder[[name=rand_parms, folder_type='Collapsible', label='Configure Random', hide_when="{ weight_method != 0 }"]]
     string seed_attrib = chs('seed_attribute'); // [[folder=rand_parms, preset=attribSelectInt, help='Uses elemnum if blank']]
@@ -24,7 +24,7 @@ if(weight_method == 0){
         seed_primary = i@elemnum;
     }
     float seed_secondary = chf("secondary_seed"); // [[folder=rand_parms,max=123]]
-    spin_weight = rand(set( seed_primary, seed_secondary))*2-1;
+    spin_weight = vector(rand(set( seed_primary, seed_secondary)))*2-1;
 }
 else if(weight_method == 1){
     // folder[[name=weight_parms, folder_type='Collapsible', label='Configure Weight', hide_when="{ weight_method != 1 }"]]
@@ -32,7 +32,7 @@ else if(weight_method == 1){
 }
 
 int rOrd = chi('rOrd'); // [[label='Rotation Order', menu_pairs={'xyz':'Rx Ry Rz','xzy':'Rx Rz Ry','yxz':'Ry Rx Rz','yzx':'Ry Rz Rx','zxy':'Rz Rx Ry','zyx':'Rz Ry Rx'}]]
-vector rotamt = radians(chv("max_rotate")) * spin_weight; // [[default=360]]
+vector rotamt = radians(chv("max_rotate")) * spin_weight; // [[default=30]]
 vector4 qspin = eulertoquaternion(rotamt,rOrd);
 
 string output_type = chs('output_type'); // [[menu_pairs={'orient':'Orient','rot':'Rot','transform3':'Transform (3x3)','transform4':'Transform (4x4)','packed':'Packed Prims'} ]]
