@@ -74,7 +74,7 @@ float surface_attract_scale = chf('surface_attract_scale');
 int attract_type = chi('attract_type');
     // [[ default=0, folder=surface_attraction, menu_items=('Update Force', 'Simple Add to Velocity')]]
 
-// folder[[ name=updateforce, parent_folder=surface_attraction, folder_type=Borderless, hide_when='{ attract_type != 1 }']]
+// folder[[ name=updateforce, parent_folder=surface_attraction, folder_type=Borderless, hide_when='{ attract_type != 0 }']]
 int ignore_mass = chi('ignore_mass');
     // [[ is_toggle, default=1, folder=updateforce]]
 int as_wind = chi('as_wind');
