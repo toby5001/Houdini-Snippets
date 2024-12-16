@@ -32,7 +32,7 @@ else if(weight_method == 1){
 }
 
 int rOrd = chi('rOrd'); // [[label='Rotation Order', menu_pairs={'xyz':'Rx Ry Rz','xzy':'Rx Rz Ry','yxz':'Ry Rx Rz','yzx':'Ry Rz Rx','zxy':'Rz Rx Ry','zyx':'Rz Ry Rx'}]]
-vector rotamt = radians(chv("max_rotate")) * spin_weight; // [[default=30]]
+vector rotamt = radians(chv("max_rotate")) * spin_weight; // [[default=0]]
 vector4 qspin = eulertoquaternion(rotamt,rOrd);
 
 string output_type = chs('output_type'); // [[menu_pairs={'orient':'Orient','rot':'Rot','transform3':'Transform (3x3)','transform4':'Transform (4x4)','packed':'Packed Prims'} ]]
