@@ -31,16 +31,18 @@ vector4 composite_layer(string BlendMode; vector BottomRGB, TopRGB; float Bottom
         blended = TopRGB;
     else if(BlendMode == "Average")
         blended = (BottomRGB+TopRGB)/2.0;
+    else if(BlendMode == "Add")
+        blended = BottomRGB+TopRGB;
     else if(BlendMode == "Darken")
         blended = min(BottomRGB, TopRGB);
     else if(BlendMode == "Multiply")
         blended = (BottomRGB * TopRGB);
-        else if (BlendMode == "Color Burn"){
-            if (TopRGB == 0.0)
-                blended = TopRGB;
-            else 
-                blended = max(1.0 - (1.0 - BottomRGB) / TopRGB, 0.0);
-        }
+    else if (BlendMode == "Color Burn"){
+        if (TopRGB == 0.0)
+            blended = TopRGB;
+        else 
+            blended = max(1.0 - (1.0 - BottomRGB) / TopRGB, 0.0);
+    }
     else if (BlendMode == "Linear Burn")
         blended = max((BottomRGB + TopRGB - 1.0), {0,0,0});
     else if (BlendMode == "Lighten")
@@ -212,15 +214,15 @@ else if(base_attribute_method == 1){
         vector outval = set(bottomRGBA.x,bottomRGBA.y,bottomRGBA.z);
         WRITEATTRIB(outval);
     }
-    if( sz == 1){
+    else if( sz == 1){
         float outval = (bottomRGBA.x + bottomRGBA.y + bottomRGBA.z) / 3.;
         WRITEATTRIB(outval);
     }
-    if( sz == 2){
+    else if( sz == 2){
         vector2 outval = (bottomRGBA.x + bottomRGBA.y) / 2.;
         WRITEATTRIB(outval);
     }
-    if( sz == 4){
+    else if( sz == 4){
         WRITEATTRIB(bottomRGBA);
     }
     
