@@ -1,6 +1,6 @@
 // Allows layering of multiple attributes through standard combination methods. Supports mixed types of float, vector2, vector, and vector4.
 // adl_sop_colorLayer.vfl, by Andrew Louda
-// Modified: 2024-11-13 - Initial asset
+// Modified: 2025-06-30 - Minor fixes
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
