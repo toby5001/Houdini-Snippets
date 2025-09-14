@@ -1,6 +1,6 @@
-// Spins items using an existing weight . Can be applied to either packed primitives or most standard instance attributes.
+// Spins items using an existing weight. Can be applied to either packed primitives or most standard instance attributes.
 // adl_sop_spinByWeight.vfl, by Andrew Louda
-// Modified: 2024-10-27 - Updated to new paramter syntax and added randomization within wrangle along and a unser-defined rotation order.
+// Modified: 2025-09-14 - Added a rotation step parameter
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -32,7 +32,14 @@ else if(weight_method == 1){
 }
 
 int rOrd = chi('rOrd'); // [[label='Rotation Order', menu_pairs={'xyz':'Rx Ry Rz','xzy':'Rx Rz Ry','yxz':'Ry Rx Rz','yzx':'Ry Rz Rx','zxy':'Rz Rx Ry','zyx':'Rz Ry Rx'}]]
-vector rotamt = radians(chv("max_rotate")) * spin_weight; // [[default=0]]
+vector rotamt = chv("max_rotate") * spin_weight; // [[default=0]];
+if(chi('use_rotation_snapping')){ // [[is_toggle, join_with_next, is_label_hidden]]
+    vector rotstep = chv('rotation_step'); // [[disable_when="{ use_rotation_snapping != 1 }"]]
+    rotamt.x = rotstep.x != 0 ? rint(rotamt.x/rotstep.x)*rotstep.x : rotamt.x;
+    rotamt.y = rotstep.y != 0 ? rint(rotamt.y/rotstep.y)*rotstep.y : rotamt.y;
+    rotamt.z = rotstep.z != 0 ? rint(rotamt.z/rotstep.z)*rotstep.z : rotamt.z;
+}
+rotamt = radians(rotamt);
 vector4 qspin = eulertoquaternion(rotamt,rOrd);
 
 string output_type = chs('output_type'); // [[menu_pairs={'orient':'Orient','rot':'Rot','transform3':'Transform (3x3)','transform4':'Transform (4x4)','packed':'Packed Prims'} ]]
