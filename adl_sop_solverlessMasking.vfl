@@ -1,6 +1,6 @@
 // Simple way to transition a mask that is staggered across geo without a need for a solver, while using a consistent speed
 // adl_sop_solverlessMasking.vfl, by Andrew Louda
-// Modified: 2024-10-27 - Updated to new paramter syntax
+// Modified: 2025-9-9 - Improved interface and added per-attribute variation for offset_spread.
 // Copyright 2024 Andrew Louda. This file is licensed under the Apache 2.0 license.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,12 +8,15 @@
 
 string output_attribute = chs('output_attribute'); // [[default=mask, preset=attribSelectFloat]]
 
-int progression_mode = chi('progression_mode'); // [[join_with_next, label='Progression', help='Moves through offsets as it goes from 0 to 1', menu_items=('Uniform','Attribute')]]
-float progression = chf("progression"); // [[is_label_hidden, disable_when='{ progression_mode != 0 }']]
-string progression_attribute = chs('progression_attribute'); // [[default=mask, preset=attribSelect, hide_when='{ progression_mode != 1 }' ]]
-if(progression_mode==1) progression = getattrib(0,chs('class'),progression_attribute,@elemnum,0);
+float progression = chf("progression");                                // [[join_with_next=1, disable_when='{ progression_mode != 0 }', help='Moves through offsets as it goes from 0 to 1']]
+int progression_mode = chi('progression_mode');                        // [[is_label_hidden=1, menu_items=('Constant','Attribute')]]
+string progression_attribute = chs('progression_attribute');           // [[default='mask', preset=attribSelect, hide_when='{ progression_mode != 1 }' ]]
+if(progression_mode==1) progression = attrib(0, chs('class'), progression_attribute, i@elemnum);
 
-float offset_spread = chf("spread"); // [[default=1, min=0, max=10]]
+float offset_spread = chf('offset_spread');                            // [[join_with_next=1, disable_when='{ offset_spread_mode != 0 }', default=1, min=0, max=10]]
+int offset_spread_mode = chi('offset_spread_mode');                    // [[is_label_hidden=1, menu_items=('Constant','Attribute') ]]
+string offset_spread_attribute = chs('offset_spread_attribute');       // [[default='offset_spread', preset=attribSelect, hide_when='{ offset_spread_mode != 1 }' ]]
+if(offset_spread_mode==1) offset_spread = attrib(0, chs('class'), offset_spread_attribute, i@elemnum);
 
 int offset_method = chi('offset_method'); // [[menu_items=('rand','weight'), menu_labels=('Random Per Element','Weight Attribute') ]]
 
