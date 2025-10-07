@@ -1,0 +1,22 @@
+// Flicker from on to off as a mask transitions from 0 to 1
+// adl_sop_flickerMask.vfl, by Andrew Louda
+// Modified: 2025-09-12 - Initial asset
+// Copyright 2025 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+string attrib_name = chs('target_attribute'); // [[default=mask, preset=attribSelectFloat]]
+float mask = point(0, attrib_name, i@ptnum);
+
+float stepval = floor(mask*chi('nsteps')); // [[default=8,max=16]]
+float randval = rand(set(stepval,float(i@ptnum),chf('seed'))); // [[max=123]]
+
+if(chi('use_ramps')){ // [[is_toggle]]
+    stepval /= chi('nsteps');
+    mask = randval <= mask ? chramp('on_ramp', stepval) : chramp('off_ramp',stepval); // [[parm=on_ramp,folder=ramps]] [[parm=off_ramp,folder=ramps]]
+    // folder[[name=ramps,folder_type=Collapsible,tags={'sidefx::header_toggle':'use_ramps'},disable_when="{ use_ramps != 1 }"]]
+}
+else{
+    mask = randval <= mask ? 1.0 : 0.0;
+}
+
+setattrib(0, chs('class'), attrib_name, @elemnum, @vtxnum, mask, 'set');
