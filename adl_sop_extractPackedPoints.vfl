@@ -1,0 +1,56 @@
+// Get the pivot point for pieces of packed geometry.
+// adl_sop_extractPackedPoints.vfl, by Andrew Louda
+// Modified: 2025-09-14 - Initial asset
+// Copyright 2025 Andrew Louda. This file is licensed under the Apache 2.0 license.
+// SPDX-License-Identifier: Apache-2.0
+
+matrix3 xform = primintrinsic(0,'transform',@ptnum);
+vector pivot = primintrinsic(0, 'pivot', @ptnum);
+vector pos = v@P;
+pos -= xform * pivot;
+
+removeprim(0,@ptnum,0);
+
+// get bound size
+float bounds[] = primintrinsic(0, "packedbounds", @ptnum);
+
+vector pivotnew = 0;
+int pivot_method = chi('pivot_method'); // [[menu_items=("Unchanged","Bbox Parameter","Bbox Attribute", "Pivot Attribute")]]
+if( pivot_method == 1 ){
+    pivotnew = set( lerp(bounds[0], bounds[1], chf('x_bounds')), lerp(bounds[2], bounds[3], chf('y_bounds')), lerp(bounds[4], bounds[5], chf('z_bounds')) );
+    pos += xform * pivotnew;
+    // folder[[name=bounds_parm, hide_when="{ pivot_method != 1 }"]]
+    // [[parm=x_bounds, default=0.5, folder=bounds_parm]] [[parm=y_bounds, default=0.5, folder=bounds_parm]] [[parm=z_bounds, default=0.5, folder=bounds_parm]]
+}
+if( pivot_method == 2 ){
+    vector relpos = point(0, chs('relpos_attrib'), i@elemnum);
+    pivotnew = set( lerp(bounds[0], bounds[1], relpos.x), lerp(bounds[2], bounds[3], relpos.y), lerp(bounds[4], bounds[5], relpos.z) );
+    pos += xform * pivotnew;
+    // folder[[name=bounds_attrib, hide_when="{ pivot_method != 2 }", folder_type=Borderless]]
+    // [[parm=relpos_attrib, label="Relative Position Attrib", default="bbox_relpos", folder=bounds_attrib, preset=attribSelectVector]]
+}
+if( pivot_method == 3 ){
+    /*
+        This isn't anywhere near where I want it to be, but the goal is to be able to specify a position in object-space (relative to the packed object)
+        or world space where the item pivots around. Object-space is pretty simple but world-space is proving to be super complicated.
+    */
+
+    // Object-space
+    pivotnew = point(0, chs('pivot_attrib'), i@elemnum);
+    pos +=  xform * pivotnew;
+    // [[parm=pivot_attrib, label="Pivot Position Attrib", default="pivot", preset=attribSelectVector, hide_when="{ pivot_method != 3 }"]]
+}
+
+int pt  = i@ptnum;
+v@P = pos;
+setpointattrib(0, 'transform', i@ptnum, xform, 'set');
+
+if(chi('output_pivot')){ // [[is_toggle, default=1]]
+    vector centroid = set(
+        lerp(bounds[0], bounds[1], 0.5),
+        lerp(bounds[2], bounds[3], 0.5),
+        lerp(bounds[4], bounds[5], 0.5)
+    );
+    pivotnew -= centroid;
+    setpointattrib(0, 'pivot', i@ptnum, pivotnew, 'set');
+}
